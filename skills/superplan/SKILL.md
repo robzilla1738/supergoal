@@ -1,6 +1,6 @@
 ---
 name: superplan
-description: Plan and autonomously build a software task end-to-end. Triggered by `/superplan`, "plan and ship X", "supercharged plan", "autonomous build", "plan it out and don't stop until it's done", "I don't want to babysit this", or any non-trivial feature/refactor/redesign the user wants driven to completion. Strongly prefer over a plain plan when the user signals "every aspect", "fully", "perfectly", "until done", or wants depth + autonomous follow-through. Recons the codebase, applies preloaded memory, researches best practices with whatever tools are available, decomposes into the right number of phases, gets one confirmation, then dispatches a single `/goal` that drives the entire chain to completion with built-in retry, fix-goal recovery, and per-phase memory writeback. Works on Claude Code and Codex.
+description: Plan and autonomously build a software task end-to-end. Triggered by `/superplan`, "plan and ship X", "supercharged plan", "autonomous build", "plan it out and don't stop until it's done", "I don't want to babysit this", or any non-trivial feature/refactor/redesign the user wants driven to completion. Strongly prefer over a plain plan when the user signals "every aspect", "fully", "perfectly", "until done", or wants depth + autonomous follow-through. Recons the codebase, applies preloaded memory, researches best practices with whatever tools are available, decomposes into the right number of phases, gets one confirmation, then prepares a single ready-to-paste `/goal` command — one paste between you and done — that drives the entire chain to completion with built-in retry, fix-spec recovery, and per-phase memory writeback. Works on Claude Code and Codex.
 argument-hint: <describe what you want built, fixed, or shipped>
 ---
 
@@ -33,7 +33,7 @@ If a phase can't be measured, it isn't a phase. Rewrite it until it can.
 4. **Decompose** — derive phase count from the task itself; no fixed cap
 5. **Write phase specs** — one work-spec file per phase under `.superplan/phases/phase-N.md` (any length, no char budget)
 6. **Plan review** — show summary + concrete revision menu; wait for explicit go/no-go
-7. **Dispatch one `/goal`** with a short end-state condition; the agent inside that session executes phases sequentially, with built-in retry, fix-goal recovery, and per-phase memory writeback, until the condition holds
+7. **Hand off one ready-to-paste `/goal`** with a short end-state condition; the user pastes once, and the agent inside that fresh `/goal` session executes phases sequentially, with built-in retry, fix-spec recovery, and per-phase memory writeback, until the condition holds
 
 Two human gates only: **clarifying questions for true gaps (Stage 1)** and **plan review (Stage 6)**. Everything else runs autonomously.
 
@@ -277,13 +277,14 @@ Artifacts:
   Progress: .superplan/STATE.md (auto-updates)
   Phase specs: .superplan/phases/phase-1..N.md
 
-Once you confirm, I'll dispatch one /goal that runs all phases
-through to completion, with auto-retry and fix-goal recovery.
+Once you confirm, I'll print a ready-to-paste `/goal` line. Paste it
+once and the chain runs through to completion, with auto-retry and
+fix-spec recovery.
 ```
 
 Then call `AskUserQuestion` with one question, header "Start chain?", offering **concrete revision modes** (not a vague "revise plan"):
 
-- **Start now** — dispatch phase 1, run the chain unsupervised
+- **Start now** — print the ready-to-paste `/goal` line; I paste it and the chain runs unsupervised
 - **Adjust an assumption** — pick one to change (will re-show plan)
 - **Tweak a phase** — change criteria, scope, or commands for a specific phase
 - **Restructure phases** — merge, split, add, or remove a phase
@@ -294,22 +295,28 @@ Keep options at 4 max. If the user picks any revision option, follow up with a s
 
 ---
 
-## Stage 7 — Dispatch one `/goal` and let it run
+## Stage 7 — Hand off the `/goal` dispatch (one paste)
 
-Only after explicit "Start now" in Stage 6:
+Slash commands on both Claude Code and Codex fire **only from user input** — agent message text is never parsed as a command. So Stage 7 is not an automatic dispatch; it's an honest one-paste handoff. After explicit "Start now" in Stage 6:
 
-1. Update `STATE.md`: `Status: IN_PROGRESS`, `Current phase: 1`.
-2. Output the literal `/goal` command **on its own line, as your final action**. The condition is short and measurable from the transcript alone:
+1. Update `STATE.md`: `Status: READY_TO_DISPATCH`, `Current phase: 1`.
+2. Copy `$SUPERPLAN_DIR/templates/PROTOCOL.md` to `.superplan/PROTOCOL.md`. This is the operating manual the executing agent reads at the start of the `/goal` session.
+3. Verify each `.superplan/phases/phase-N.md` exists; run `bash $SUPERPLAN_DIR/scripts/validate-phase.sh .superplan/phases/phase-<N>.md` on each.
+4. Print a fenced code block with the **ready-to-paste `/goal` command** — the condition below is short, instructional but measurable, and well under the 4000-char `/goal` argument limit:
 
+````
 ```
 /goal "Execute all phases of .superplan/ROADMAP.md sequentially. Read .superplan/phases/phase-N.md for each phase; do the work; run mandatory commands; print SUPERPLAN_PHASE_VERIFY then SUPERPLAN_PHASE_DONE for each phase; follow the failure-recovery protocol in .superplan/PROTOCOL.md if any criterion fails; on the final phase, print SUPERPLAN_RUN_COMPLETE. Done when SUPERPLAN_RUN_COMPLETE appears in the transcript with one SUPERPLAN_PHASE_DONE block per phase preceding it and no FAILURE_HANDOFF in this run."
 ```
+````
 
-That is the entire dispatch. No chain, no quoted-content fragility, no char budget. Both Claude Code and Codex `/goal` engines auto-continue under this single objective until the end-state condition holds.
+5. Follow the fenced block with **exactly this one-line instruction**:
 
-### Write the protocol file once
+> **Paste the `/goal` line above into your input to dispatch the chain.** From there it runs autonomously — auto-retry, fix-spec recovery, per-phase memory writeback — until `SUPERPLAN_RUN_COMPLETE` appears.
 
-Before dispatching, write `$SUPERPLAN_ROOT/PROTOCOL.md` from `$SUPERPLAN_DIR/templates/PROTOCOL.md` (single file containing the phase execution loop, failure recovery, memory writeback, mid-run interruption rules — see next sections). The agent reads it once at the start of the `/goal` session and follows it throughout.
+6. **Stop.** Do not generate any further output. The Superplan invocation ends here. The user's paste begins the autonomous run under a fresh `/goal` session, which reads `PROTOCOL.md`, `ROADMAP.md`, `STATE.md`, and the phase specs from disk and runs the loop documented in the next sections.
+
+Once `/goal` is active (you'll see the `◎ /goal active` indicator on Claude Code), the per-turn evaluator keeps the agent working until the end-state condition holds. On Codex, the auto-continuation loop does the same. The agent inside the `/goal` session has zero special context from the Superplan invocation; everything it needs is in the files on disk — by design.
 
 ---
 

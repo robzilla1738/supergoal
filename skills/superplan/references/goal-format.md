@@ -14,7 +14,9 @@ Key implications:
 
 ## Superplan's single-`/goal` shape
 
-Superplan dispatches **one** `/goal` per run. The condition is:
+Superplan uses **one** `/goal` per run, dispatched by the **user** at the end of Stage 7. Slash commands fire only from user input on both Claude Code and Codex — the planner cannot fire `/goal` from its own message text. Stage 7's job is to write all phase specs to disk, then print a copy-paste-ready `/goal` block. The user pastes once; from there, the run is autonomous.
+
+The condition is:
 
 ```
 Execute all phases of .superplan/ROADMAP.md sequentially.
@@ -29,7 +31,7 @@ SUPERPLAN_PHASE_DONE block per phase preceding it and no
 FAILURE_HANDOFF in this run.
 ```
 
-This works on both hosts. There is no per-phase `/goal` dispatch, no quoted-content fragility, no char budget. The agent reads files as it goes.
+This works on both hosts. There is no per-phase `/goal` dispatch and no inter-session chain — once active, a single `/goal` session reads PROTOCOL.md and loops through every phase spec until the end-state holds.
 
 ## Required transcript blocks (Superplan-specific)
 

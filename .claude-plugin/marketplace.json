@@ -1,0 +1,14 @@
+{
+  "name": "superplan",
+  "owner": {
+    "name": "Robert Courson",
+    "url": "https://github.com/robzilla1738"
+  },
+  "plugins": [
+    {
+      "name": "superplan",
+      "source": "./",
+      "description": "Plan and autonomously build a software task end-to-end. One ready-to-paste /goal, adaptive phase count, memory preload + writeback, 3-strike self-healing recovery. Works on Claude Code and Codex."
+    }
+  ]
+}

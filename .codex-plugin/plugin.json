@@ -1,9 +1,0 @@
-{
-  "name": "superplan",
-  "description": "Plan and autonomously build a software task end-to-end. Recons the codebase, applies preloaded memory, decomposes into the right number of phases, gets one confirmation, then dispatches a single /goal that drives execution to completion with built-in retry, fix-spec recovery, and per-phase memory writeback. Works on Claude Code and Codex.",
-  "version": "0.4.0",
-  "author": {
-    "name": "Robert Courson"
-  },
-  "skills": "./skills/"
-}
