@@ -1,8 +1,8 @@
-# Superplan
+# Supergoal
 
 Plan deeply, then autonomously build until it's done.
 
-`/superplan <what you want>` recons your codebase, applies your saved preferences from memory, decomposes the work into the right number of phases for the task, gets one confirmation from you, then prints a **single ready-to-paste `/goal` command**. Paste it once and the rest is autonomous: every phase runs sequentially with built-in retry, fix-spec recovery, and per-phase memory writeback until `SUPERPLAN_RUN_COMPLETE`.
+`/supergoal <what you want>` recons your codebase, applies your saved preferences from memory, decomposes the work into the right number of phases for the task, gets one confirmation from you, then prints a **single ready-to-paste `/goal` command**. Paste it once and the rest is autonomous: every phase runs sequentially with built-in retry, fix-spec recovery, and per-phase memory writeback until `SUPERGOAL_RUN_COMPLETE`.
 
 Works on **Claude Code** and **Codex** (Codex CLI).
 
@@ -10,7 +10,7 @@ Works on **Claude Code** and **Codex** (Codex CLI).
 
 ```mermaid
 flowchart TD
-    Start(["/superplan &lt;your task&gt;"]) --> S0["Stage 0<br/>Load memory + detect tools"]
+    Start(["/supergoal &lt;your task&gt;"]) --> S0["Stage 0<br/>Load memory + detect tools"]
     S0 --> S1{Greenfield<br/>or brownfield?}
     S1 -->|Greenfield| Q1["Stage 1<br/>up to 4 questions"]
     S1 -->|Brownfield| Q2["Stage 1<br/>0–2 questions"]
@@ -23,11 +23,11 @@ flowchart TD
     S6 -->|Revise| S4
     S6 -->|Start now| S7["Stage 7<br/>Print ready-to-paste /goal"]
     S7 --> PASTE(["You paste /goal — once"])
-    PASTE --> LOOP["Autonomous loop per phase:<br/>read spec → do work →<br/>SUPERPLAN_PHASE_VERIFY →<br/>write memory → SUPERPLAN_PHASE_DONE"]
+    PASTE --> LOOP["Autonomous loop per phase:<br/>read spec → do work →<br/>SUPERGOAL_PHASE_VERIFY →<br/>write memory → SUPERGOAL_PHASE_DONE"]
     LOOP --> CHECK{Failure?}
     CHECK -->|None| NEXT{More phases?}
     NEXT -->|Yes| LOOP
-    NEXT -->|No| DONE(["SUPERPLAN_RUN_COMPLETE ✓"])
+    NEXT -->|No| DONE(["SUPERGOAL_RUN_COMPLETE ✓"])
     CHECK -->|1st| R1["Auto-retry<br/>with probe injected"]
     R1 --> LOOP
     CHECK -->|2nd| R2["Write fix-spec,<br/>execute inline"]
@@ -59,9 +59,9 @@ flowchart LR
         A7 --> A8["Done — many turns"]
     end
 
-    subgraph Superplan["With Superplan"]
+    subgraph Supergoal["With Supergoal"]
         direction TB
-        B1["/superplan &lt;task&gt;"] --> B2["Plan + per-phase specs<br/>+ risks + memory hits"]
+        B1["/supergoal &lt;task&gt;"] --> B2["Plan + per-phase specs<br/>+ risks + memory hits"]
         B2 --> B3["Approve once"]
         B3 --> B4["Paste /goal once"]
         B4 --> B5["Autonomous run<br/>self-heals failures<br/>writes memories"]
@@ -78,7 +78,7 @@ Two human touches total: one approval, one paste. The plan is **deeper** than a 
 
 ## Why one `/goal` (not a chain)
 
-`/goal` on both hosts takes a short **end-state condition** that an evaluator checks against the transcript after each turn — not a long task body. Superplan leverages this directly: one `/goal` covers the whole run; phase work lives in files the agent reads from disk. No char budget, no inter-session chain, no fragility.
+`/goal` on both hosts takes a short **end-state condition** that an evaluator checks against the transcript after each turn — not a long task body. Supergoal leverages this directly: one `/goal` covers the whole run; phase work lives in files the agent reads from disk. No char budget, no inter-session chain, no fragility.
 
 Slash commands only fire from user input, so Stage 7 is an honest one-paste handoff: the planner prepares the `/goal` line, you paste it, the autonomous run starts. From there it drives itself to completion.
 
@@ -87,27 +87,27 @@ Slash commands only fire from user input, so Stage 7 is an honest one-paste hand
 Three commands inside a Claude Code session:
 
 ```text
-/plugin marketplace add https://github.com/robzilla1738/superplan.git
-/plugin install superplan@superplan
+/plugin marketplace add https://github.com/robzilla1738/supergoal.git
+/plugin install supergoal@supergoal
 /reload-plugins
 ```
 
-That's it. `/superplan` is available immediately. Verified working (installs as `superplan@superplan` v0.4.1, ~307 tokens always-on + ~10k on-invoke).
+That's it. `/supergoal` is available immediately. Plugin install was verified end-to-end against the live repo (installs as `supergoal@supergoal`, ~307 tokens always-on + ~10k on-invoke).
 
-> **Tip:** the `owner/repo` shorthand (`/plugin marketplace add robzilla1738/superplan`) also works **only if you have GitHub SSH keys configured**, since it defaults to `git@github.com:` cloning. If you hit "SSH authentication failed" or "Permission denied (publickey)", use the HTTPS URL form above instead.
+> **Tip:** the `owner/repo` shorthand (`/plugin marketplace add robzilla1738/supergoal`) also works **only if you have GitHub SSH keys configured**, since it defaults to `git@github.com:` cloning. If you hit "SSH authentication failed" or "Permission denied (publickey)", use the HTTPS URL form above instead.
 
-If `/plugin install` errors with "not found", run `/plugin marketplace update superplan` and try again.
+If `/plugin install` errors with "not found", run `/plugin marketplace update supergoal` and try again.
 
 **Manual install** (if you'd rather skip the marketplace flow entirely):
 
 ```bash
 mkdir -p ~/.claude/skills
-git clone https://github.com/robzilla1738/superplan /tmp/superplan-clone
-cp -R /tmp/superplan-clone/skills/superplan ~/.claude/skills/
-rm -rf /tmp/superplan-clone
+git clone https://github.com/robzilla1738/supergoal /tmp/supergoal-clone
+cp -R /tmp/supergoal-clone/skills/supergoal ~/.claude/skills/
+rm -rf /tmp/supergoal-clone
 ```
 
-Then run `/reload-plugins` (or restart Claude Code) and `/superplan` is available.
+Then run `/reload-plugins` (or restart Claude Code) and `/supergoal` is available.
 
 ## Install — Codex CLI
 
@@ -115,17 +115,17 @@ Codex doesn't have a plugin marketplace, so the install is a manual clone-and-co
 
 ```bash
 mkdir -p ~/.codex/skills
-git clone https://github.com/robzilla1738/superplan /tmp/superplan-clone
-cp -R /tmp/superplan-clone/skills/superplan ~/.codex/skills/
-rm -rf /tmp/superplan-clone
+git clone https://github.com/robzilla1738/supergoal /tmp/supergoal-clone
+cp -R /tmp/supergoal-clone/skills/supergoal ~/.codex/skills/
+rm -rf /tmp/supergoal-clone
 ```
 
-Restart Codex and `/superplan` is available. To update later, re-run the clone-and-copy.
+Restart Codex and `/supergoal` is available. To update later, re-run the clone-and-copy.
 
 ## Use
 
 ```text
-/superplan build me an Expo app that converts photos to ASCII art
+/supergoal build me an Expo app that converts photos to ASCII art
 ```
 
 What happens:
@@ -135,7 +135,7 @@ What happens:
 3. **Stage 2 — Recon.** Parallel codebase/environment scan.
 4. **Stage 3 — Deep think.** Identifies top-3 risks + dependencies. Uses Context7/WebSearch if available (optional, not required).
 5. **Stage 4 — Decompose.** Phase count derived from the task — no fixed cap. Small change = 2 phases; full-stack greenfield = 8–12+.
-6. **Stage 5 — Write specs.** `ROADMAP.md` + `STATE.md` + one `phase-N.md` work spec per phase, all under `.superplan/`.
+6. **Stage 5 — Write specs.** `ROADMAP.md` + `STATE.md` + one `phase-N.md` work spec per phase, all under `.supergoal/`.
 7. **Stage 6 — Plan review.** Shows phases, assumptions, risks, and applied memories. Concrete revision menu: **Start now / Adjust assumption / Tweak a phase / Restructure phases.**
 8. **Stage 7 — Hand off.** Prints a ready-to-paste `/goal` line. You paste it once; the chain runs phases sequentially with 3-strike auto-retry → fix-spec → handoff, writing a memory at each phase boundary so future runs start smarter.
 
@@ -153,14 +153,14 @@ Flaky envs, typos, and missed deps self-resolve. Only real blockers escalate.
 
 Each phase ends with a "non-obvious learnings" check. If anything a future run on a similar task would benefit from was learned (an API quirk, a confirmed user preference, a project-level fact, a failure-and-fix pattern), it's saved to your memory directory using the standard `name`/`description`/`metadata.type` frontmatter. The final phase always writes a `project_<slug>.md` memory pointing at the new/changed project.
 
-The memory directory is auto-detected from a cascade: `$HOME/.claude/projects/-Users-$(whoami)/memory`, `$HOME/.claude/memory`, `$PWD/.claude/memory`, `.superplan/memory`. The skill works with or without a memory directory; it just starts smarter when one is present.
+The memory directory is auto-detected from a cascade: `$HOME/.claude/projects/-Users-$(whoami)/memory`, `$HOME/.claude/memory`, `$PWD/.claude/memory`, `.supergoal/memory`. The skill works with or without a memory directory; it just starts smarter when one is present.
 
 ## Artifacts a run produces
 
-All under `.superplan/` in the project directory:
+All under `.supergoal/` in the project directory:
 
 ```
-.superplan/
+.supergoal/
 ├── ROADMAP.md            full plan
 ├── STATE.md              live progress, updated per phase
 ├── THINKING.md           risks, dependencies, applied memories, best practices
@@ -179,7 +179,7 @@ All under `.superplan/` in the project directory:
 ## Skill internals
 
 ```
-skills/superplan/
+skills/supergoal/
 ├── SKILL.md
 ├── references/
 │   ├── planning-depth.md      what makes a plan deep enough to deserve "Super"
@@ -204,7 +204,7 @@ skills/superplan/
 
 ## Version
 
-Current: **v0.4.1**. See [CHANGELOG.md](CHANGELOG.md) for release notes.
+Current: **v0.5.0**. See [CHANGELOG.md](CHANGELOG.md) for release notes.
 
 Marketplace consumers can pin a specific version via the `/plugin` UI. Auto-updates are off by default for third-party marketplaces — enable per-marketplace via `/plugin` → **Marketplaces** if you want them.
 

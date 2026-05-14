@@ -39,7 +39,7 @@ check_section() {
 }
 
 # Required markers
-check_marker "SUPERPLAN_PHASE_START" "phase-start marker"
+check_marker "SUPERGOAL_PHASE_START" "phase-start marker"
 
 # Required sections
 check_section "Work"

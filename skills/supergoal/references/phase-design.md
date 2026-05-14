@@ -6,7 +6,7 @@ The goal of phase decomposition: hand the executor a sequence of **independently
 
 **Whatever the task actually needs.** Phase count is derived, not chosen. There is no fixed range and no upper cap. Use these as loose orientation, not rules:
 
-- **2 phases** — small change with a meaningful Polish & Harden pass at the end (one screen + harden; one API route + harden). Below this, you don't need Superplan — just do the work.
+- **2 phases** — small change with a meaningful Polish & Harden pass at the end (one screen + harden; one API route + harden). Below this, you don't need Supergoal — just do the work.
 - **3–4 phases** — small features, single-surface changes (one screen, one API route, one migration with tests).
 - **5–7 phases** — typical features (foundation + core + integration + states/edges + polish, with a fork or two).
 - **8–12 phases** — large features, full-stack greenfield apps, complex refactors that need a safety-net + staged migration.
@@ -108,4 +108,4 @@ Always the last phase. Its job: catch what the earlier phases missed because the
 7. **Diff review** — final `git diff` reviewed for stray debug logs, commented-out code, TODOs from this session
 8. **Regression sweep** — re-run the full test suite; manually exercise one or two adjacent features
 
-This is where "every aspect is perfect" gets enforced. Without this phase, Superplan is just a multi-step planner.
+This is where "every aspect is perfect" gets enforced. Without this phase, Supergoal is just a multi-step planner.

@@ -1,12 +1,12 @@
 ---
-name: superplan
-description: Plan and autonomously build a software task end-to-end. Triggered by `/superplan`, "plan and ship X", "supercharged plan", "autonomous build", "plan it out and don't stop until it's done", "I don't want to babysit this", or any non-trivial feature/refactor/redesign the user wants driven to completion. Strongly prefer over a plain plan when the user signals "every aspect", "fully", "perfectly", "until done", or wants depth + autonomous follow-through. Recons the codebase, applies preloaded memory, researches best practices with whatever tools are available, decomposes into the right number of phases, gets one confirmation, then prepares a single ready-to-paste `/goal` command — one paste between you and done — that drives the entire chain to completion with built-in retry, fix-spec recovery, and per-phase memory writeback. Works on Claude Code and Codex.
+name: supergoal
+description: Plan and autonomously build a software task end-to-end. Triggered by `/supergoal`, "plan and ship X", "supercharged plan", "autonomous build", "plan it out and don't stop until it's done", "I don't want to babysit this", or any non-trivial feature/refactor/redesign the user wants driven to completion. Strongly prefer over a plain plan when the user signals "every aspect", "fully", "perfectly", "until done", or wants depth + autonomous follow-through. Recons the codebase, applies preloaded memory, researches best practices with whatever tools are available, decomposes into the right number of phases, gets one confirmation, then prepares a single ready-to-paste `/goal` command — one paste between you and done — that drives the entire chain to completion with built-in retry, fix-spec recovery, and per-phase memory writeback. Works on Claude Code and Codex.
 argument-hint: <describe what you want built, fixed, or shipped>
 ---
 
-# Superplan
+# Supergoal
 
-You are running the Superplan workflow. The user's task is:
+You are running the Supergoal workflow. The user's task is:
 
 $ARGUMENTS
 
@@ -26,12 +26,12 @@ If a phase can't be measured, it isn't a phase. Rewrite it until it can.
 
 ## How this skill works (one-shot summary)
 
-0. **Available context** — preload memory; detect available tools (Context7, WebSearch, MCPs, skills); resume any in-progress Superplan state
+0. **Available context** — preload memory; detect available tools (Context7, WebSearch, MCPs, skills); resume any in-progress Supergoal state
 1. **Intake** — restate, classify, ask questions calibrated to context: **up to 4** for greenfield (no codebase to scan), **0–2** for brownfield (recon answers most of it)
 2. **Recon** — parallel codebase + environment scan
 3. **Deep think** — research best practices with whatever tools exist (optional, not required); list top-3 risks + dependencies
 4. **Decompose** — derive phase count from the task itself; no fixed cap
-5. **Write phase specs** — one work-spec file per phase under `.superplan/phases/phase-N.md` (any length, no char budget)
+5. **Write phase specs** — one work-spec file per phase under `.supergoal/phases/phase-N.md` (any length, no char budget)
 6. **Plan review** — show summary + concrete revision menu; wait for explicit go/no-go
 7. **Hand off one ready-to-paste `/goal`** with a short end-state condition; the user pastes once, and the agent inside that fresh `/goal` session executes phases sequentially, with built-in retry, fix-spec recovery, and per-phase memory writeback, until the condition holds
 
@@ -39,23 +39,23 @@ Two human gates only: **clarifying questions for true gaps (Stage 1)** and **pla
 
 ### Why one `/goal`, not a chain
 
-`/goal` in both Claude Code and Codex takes a **short end-state condition**, not a long task body. A fast evaluator checks the condition against the transcript after each turn and auto-continues until it holds. Superplan v3 leverages this directly: one `/goal` covers the whole run; phase work lives in files the agent reads from disk; the condition is "all phases done, `SUPERPLAN_RUN_COMPLETE` printed." No char budget, no inter-session chain dispatch, no fragility.
+`/goal` in both Claude Code and Codex takes a **short end-state condition**, not a long task body. A fast evaluator checks the condition against the transcript after each turn and auto-continues until it holds. Supergoal v3 leverages this directly: one `/goal` covers the whole run; phase work lives in files the agent reads from disk; the condition is "all phases done, `SUPERGOAL_RUN_COMPLETE` printed." No char budget, no inter-session chain dispatch, no fragility.
 
 ## Locate the skill directory
 
 ```bash
-SUPERPLAN_DIR=$(dirname "$(ls -1 \
-  "$HOME/.claude/skills/superplan/SKILL.md" \
-  "$PWD/.claude/skills/superplan/SKILL.md" \
+SUPERGOAL_DIR=$(dirname "$(ls -1 \
+  "$HOME/.claude/skills/supergoal/SKILL.md" \
+  "$PWD/.claude/skills/supergoal/SKILL.md" \
   2>/dev/null | head -n1)")
-export SUPERPLAN_DIR
-export SUPERPLAN_ROOT="${SUPERPLAN_ROOT:-.superplan}"
-mkdir -p "$SUPERPLAN_ROOT/goals"
-echo "SUPERPLAN_DIR=$SUPERPLAN_DIR"
-echo "SUPERPLAN_ROOT=$SUPERPLAN_ROOT"
+export SUPERGOAL_DIR
+export SUPERGOAL_ROOT="${SUPERGOAL_ROOT:-.supergoal}"
+mkdir -p "$SUPERGOAL_ROOT/goals"
+echo "SUPERGOAL_DIR=$SUPERGOAL_DIR"
+echo "SUPERGOAL_ROOT=$SUPERGOAL_ROOT"
 ```
 
-All artifacts live under `$SUPERPLAN_ROOT`. Skill assets (scripts, references, templates) live under `$SUPERPLAN_DIR`.
+All artifacts live under `$SUPERGOAL_ROOT`. Skill assets (scripts, references, templates) live under `$SUPERGOAL_DIR`.
 
 ---
 
@@ -72,7 +72,7 @@ for cand in \
   "$HOME/.claude/projects/-Users-$(whoami)/memory" \
   "$HOME/.claude/memory" \
   "$PWD/.claude/memory" \
-  "$SUPERPLAN_ROOT/memory"; do
+  "$SUPERGOAL_ROOT/memory"; do
   [[ -d "$cand" ]] && MEM_DIR="$cand" && break
 done
 echo "MEM_DIR=$MEM_DIR"
@@ -85,7 +85,7 @@ fi
 
 Read the index. Then **selectively** read individual memory files that look relevant to the task (feedback memories about the stack/domain, user role memories, related project memories). Don't dump them all into context — pull what matters.
 
-Capture applicable memory hits in `$SUPERPLAN_ROOT/applied-memories.md` (one line per memory: name, why-applicable, what-it-changes). Surface them in Stage 1 as "Applied from memory: …" so the user can see what's being inherited and correct anything stale.
+Capture applicable memory hits in `$SUPERGOAL_ROOT/applied-memories.md` (one line per memory: name, why-applicable, what-it-changes). Surface them in Stage 1 as "Applied from memory: …" so the user can see what's being inherited and correct anything stale.
 
 ### Tool discovery
 
@@ -93,14 +93,14 @@ Tools differ between sessions and hosts (Claude Code vs Codex, different MCP ser
 
 - **Context7** — available if `mcp__claude_ai_Context7__resolve-library-id` or similar is in the tool list. If absent, skip it; rely on training-cutoff knowledge + WebSearch if that's present.
 - **WebSearch / WebFetch** — available if listed. If neither, skip web research.
-- **Project skills** — check the available-skills list for domain-relevant skills (e.g. `mobile-ios-design`, `clerk-auth`, `expo-dev-client`) and note them in `$SUPERPLAN_ROOT/applied-skills.md` to invoke from inside phase goals if relevant.
-- **Prior Superplan state** — if `$SUPERPLAN_ROOT/STATE.md` exists from a previous run, read it; resume rather than restart.
+- **Project skills** — check the available-skills list for domain-relevant skills (e.g. `mobile-ios-design`, `clerk-auth`, `expo-dev-client`) and note them in `$SUPERGOAL_ROOT/applied-skills.md` to invoke from inside phase goals if relevant.
+- **Prior Supergoal state** — if `$SUPERGOAL_ROOT/STATE.md` exists from a previous run, read it; resume rather than restart.
 
-Write detected tools to `$SUPERPLAN_ROOT/tools.md`. Stage 3 and the phase goals reference this file when deciding what to invoke.
+Write detected tools to `$SUPERGOAL_ROOT/tools.md`. Stage 3 and the phase goals reference this file when deciding what to invoke.
 
 ### Resume detection
 
-If `STATE.md` exists and shows `Status: IN_PROGRESS` with a phase pending, **do not re-plan**. Print a one-line "Resuming Superplan from phase N" and jump straight to Stage 6 (plan review) with the existing artifacts, or directly to Stage 7 (dispatch) if the user confirms resume.
+If `STATE.md` exists and shows `Status: IN_PROGRESS` with a phase pending, **do not re-plan**. Print a one-line "Resuming Supergoal from phase N" and jump straight to Stage 6 (plan review) with the existing artifacts, or directly to Stage 7 (dispatch) if the user confirms resume.
 
 ---
 
@@ -152,19 +152,19 @@ Most well-described brownfield tasks ask **zero questions**.
 
 ## Stage 2 — Recon (parallel)
 
-Run recon scripts in parallel. They populate context files under `$SUPERPLAN_ROOT/`.
+Run recon scripts in parallel. They populate context files under `$SUPERGOAL_ROOT/`.
 
 ### Brownfield path
 
 ```bash
-bash "$SUPERPLAN_DIR/scripts/detect-stack.sh"   > "$SUPERPLAN_ROOT/context.md"
-bash "$SUPERPLAN_DIR/scripts/summarize-repo.sh" > "$SUPERPLAN_ROOT/repo-map.md"
+bash "$SUPERGOAL_DIR/scripts/detect-stack.sh"   > "$SUPERGOAL_ROOT/context.md"
+bash "$SUPERGOAL_DIR/scripts/summarize-repo.sh" > "$SUPERGOAL_ROOT/repo-map.md"
 ```
 
 ### Greenfield path
 
 ```bash
-bash "$SUPERPLAN_DIR/scripts/detect-env.sh" > "$SUPERPLAN_ROOT/context.md"
+bash "$SUPERGOAL_DIR/scripts/detect-env.sh" > "$SUPERGOAL_ROOT/context.md"
 ```
 
 Read the outputs. Then print a **5-line summary** to the user: stack, package manager, build/test/lint commands, notable modules (if any), risky areas. This is what tells them you've actually understood their codebase before planning.
@@ -173,19 +173,19 @@ Read the outputs. Then print a **5-line summary** to the user: stack, package ma
 
 ## Stage 3 — Deep think
 
-This is the difference between a generic plan and a Superplan. Spend real cycles here — but use only what's available.
+This is the difference between a generic plan and a Supergoal. Spend real cycles here — but use only what's available.
 
 **Required regardless of tools:**
 - Identify the **top 3 risks**: what's most likely to go wrong, what's hardest to undo, what's easy to miss until shipped.
 - Identify **non-obvious dependencies**: things that have to happen in a specific order or block other work.
-- Apply memory hits from `$SUPERPLAN_ROOT/applied-memories.md` — bake them into goals, constraints, or risk mitigations.
+- Apply memory hits from `$SUPERGOAL_ROOT/applied-memories.md` — bake them into goals, constraints, or risk mitigations.
 
-**Optional, use if available** (check `$SUPERPLAN_ROOT/tools.md`):
+**Optional, use if available** (check `$SUPERGOAL_ROOT/tools.md`):
 - **Context7** — if available, query current docs for any third-party SDK touched. Don't plan against stale APIs. If unavailable, lean on training-cutoff knowledge and call it out as an assumption ("planned against my training-cutoff understanding of Expo SDK — verify in phase 1").
 - **WebSearch** — if available, look up current consensus on patterns you're unsure about (auth flows, payment idempotency, accessibility standards). If unavailable, skip.
-- **Project skills** — if relevant skills are listed in `$SUPERPLAN_ROOT/applied-skills.md` (e.g. `clerk-auth`, `mobile-ios-design`), note them in THINKING.md as "consult `<skill>` skill during phase N" so the executor invokes them at the right moment.
+- **Project skills** — if relevant skills are listed in `$SUPERGOAL_ROOT/applied-skills.md` (e.g. `clerk-auth`, `mobile-ios-design`), note them in THINKING.md as "consult `<skill>` skill during phase N" so the executor invokes them at the right moment.
 
-**Write `$SUPERPLAN_ROOT/THINKING.md`** with sections: Goals, Constraints, Risks, Dependencies, Open Questions (already-assumed), Memory hits applied, Tools/skills relied on, Best Practices Applied. Keep it tight — 1–2 pages. This is the substrate the roadmap derives from.
+**Write `$SUPERGOAL_ROOT/THINKING.md`** with sections: Goals, Constraints, Risks, Dependencies, Open Questions (already-assumed), Memory hits applied, Tools/skills relied on, Best Practices Applied. Keep it tight — 1–2 pages. This is the substrate the roadmap derives from.
 
 See `references/planning-depth.md` for the bar to clear here.
 
@@ -214,16 +214,16 @@ Each phase has:
 
 ## Stage 5 — Write the roadmap and phase specs
 
-Three files, all under `$SUPERPLAN_ROOT/`:
+Three files, all under `$SUPERGOAL_ROOT/`:
 
-1. **`ROADMAP.md`** — the plan (template at `$SUPERPLAN_DIR/templates/ROADMAP.md`).
-2. **`STATE.md`** — live progress file the executor updates per phase (template at `$SUPERPLAN_DIR/templates/STATE.md`).
-3. **`phases/phase-N.md`** — one work-spec file per phase (template at `$SUPERPLAN_DIR/templates/phase-goal.txt`, renamed conceptually to "phase spec"). **Any length** — these are read from disk by the executor, not passed to `/goal`, so no char budget.
+1. **`ROADMAP.md`** — the plan (template at `$SUPERGOAL_DIR/templates/ROADMAP.md`).
+2. **`STATE.md`** — live progress file the executor updates per phase (template at `$SUPERGOAL_DIR/templates/STATE.md`).
+3. **`phases/phase-N.md`** — one work-spec file per phase (template at `$SUPERGOAL_DIR/templates/phase-goal.txt`, renamed conceptually to "phase spec"). **Any length** — these are read from disk by the executor, not passed to `/goal`, so no char budget.
 
 Each phase spec must include these markers so the agent and evaluator both have stable anchors:
 
 ```
-SUPERPLAN_PHASE_START
+SUPERGOAL_PHASE_START
 Phase: <N> of <total> — <name>
 Task: <one-line>
 Mandatory commands: <list>
@@ -233,10 +233,10 @@ Depends on phases: <list or "none">
 
 [... full work description, acceptance criteria, evidence requirements ...]
 
-[Agent will print SUPERPLAN_PHASE_VERIFY and SUPERPLAN_PHASE_DONE here during execution]
+[Agent will print SUPERGOAL_PHASE_VERIFY and SUPERGOAL_PHASE_DONE here during execution]
 ```
 
-Validate each spec with `bash $SUPERPLAN_DIR/scripts/validate-phase.sh .superplan/phases/phase-N.md` — it confirms the required markers exist. No char budget.
+Validate each spec with `bash $SUPERGOAL_DIR/scripts/validate-phase.sh .supergoal/phases/phase-N.md` — it confirms the required markers exist. No char budget.
 
 ---
 
@@ -273,9 +273,9 @@ Top risks & mitigations:
   3. <risk> → <mitigation>
 
 Artifacts:
-  Roadmap: .superplan/ROADMAP.md
-  Progress: .superplan/STATE.md (auto-updates)
-  Phase specs: .superplan/phases/phase-1..N.md
+  Roadmap: .supergoal/ROADMAP.md
+  Progress: .supergoal/STATE.md (auto-updates)
+  Phase specs: .supergoal/phases/phase-1..N.md
 
 Once you confirm, I'll print a ready-to-paste `/goal` line. Paste it
 once and the chain runs through to completion, with auto-retry and
@@ -300,40 +300,40 @@ Keep options at 4 max. If the user picks any revision option, follow up with a s
 Slash commands on both Claude Code and Codex fire **only from user input** — agent message text is never parsed as a command. So Stage 7 is not an automatic dispatch; it's an honest one-paste handoff. After explicit "Start now" in Stage 6:
 
 1. Update `STATE.md`: `Status: READY_TO_DISPATCH`, `Current phase: 1`.
-2. Copy `$SUPERPLAN_DIR/templates/PROTOCOL.md` to `.superplan/PROTOCOL.md`. This is the operating manual the executing agent reads at the start of the `/goal` session.
-3. Verify each `.superplan/phases/phase-N.md` exists; run `bash $SUPERPLAN_DIR/scripts/validate-phase.sh .superplan/phases/phase-<N>.md` on each.
+2. Copy `$SUPERGOAL_DIR/templates/PROTOCOL.md` to `.supergoal/PROTOCOL.md`. This is the operating manual the executing agent reads at the start of the `/goal` session.
+3. Verify each `.supergoal/phases/phase-N.md` exists; run `bash $SUPERGOAL_DIR/scripts/validate-phase.sh .supergoal/phases/phase-<N>.md` on each.
 4. Print a fenced code block with the **ready-to-paste `/goal` command** — the condition below is short, instructional but measurable, and well under the 4000-char `/goal` argument limit:
 
 ````
 ```
-/goal "Execute all phases of .superplan/ROADMAP.md sequentially. Read .superplan/phases/phase-N.md for each phase; do the work; run mandatory commands; print SUPERPLAN_PHASE_VERIFY then SUPERPLAN_PHASE_DONE for each phase; follow the failure-recovery protocol in .superplan/PROTOCOL.md if any criterion fails; on the final phase, print SUPERPLAN_RUN_COMPLETE. Done when SUPERPLAN_RUN_COMPLETE appears in the transcript with one SUPERPLAN_PHASE_DONE block per phase preceding it and no FAILURE_HANDOFF in this run."
+/goal "Execute all phases of .supergoal/ROADMAP.md sequentially. Read .supergoal/phases/phase-N.md for each phase; do the work; run mandatory commands; print SUPERGOAL_PHASE_VERIFY then SUPERGOAL_PHASE_DONE for each phase; follow the failure-recovery protocol in .supergoal/PROTOCOL.md if any criterion fails; on the final phase, print SUPERGOAL_RUN_COMPLETE. Done when SUPERGOAL_RUN_COMPLETE appears in the transcript with one SUPERGOAL_PHASE_DONE block per phase preceding it and no FAILURE_HANDOFF in this run."
 ```
 ````
 
 5. Follow the fenced block with **exactly this one-line instruction**:
 
-> **Paste the `/goal` line above into your input to dispatch the chain.** From there it runs autonomously — auto-retry, fix-spec recovery, per-phase memory writeback — until `SUPERPLAN_RUN_COMPLETE` appears.
+> **Paste the `/goal` line above into your input to dispatch the chain.** From there it runs autonomously — auto-retry, fix-spec recovery, per-phase memory writeback — until `SUPERGOAL_RUN_COMPLETE` appears.
 
-6. **Stop.** Do not generate any further output. The Superplan invocation ends here. The user's paste begins the autonomous run under a fresh `/goal` session, which reads `PROTOCOL.md`, `ROADMAP.md`, `STATE.md`, and the phase specs from disk and runs the loop documented in the next sections.
+6. **Stop.** Do not generate any further output. The Supergoal invocation ends here. The user's paste begins the autonomous run under a fresh `/goal` session, which reads `PROTOCOL.md`, `ROADMAP.md`, `STATE.md`, and the phase specs from disk and runs the loop documented in the next sections.
 
-Once `/goal` is active (you'll see the `◎ /goal active` indicator on Claude Code), the per-turn evaluator keeps the agent working until the end-state condition holds. On Codex, the auto-continuation loop does the same. The agent inside the `/goal` session has zero special context from the Superplan invocation; everything it needs is in the files on disk — by design.
+Once `/goal` is active (you'll see the `◎ /goal active` indicator on Claude Code), the per-turn evaluator keeps the agent working until the end-state condition holds. On Codex, the auto-continuation loop does the same. The agent inside the `/goal` session has zero special context from the Supergoal invocation; everything it needs is in the files on disk — by design.
 
 ---
 
 ## Phase execution loop (inside the single `/goal` session)
 
-The agent's loop, repeated until `SUPERPLAN_RUN_COMPLETE`:
+The agent's loop, repeated until `SUPERGOAL_RUN_COMPLETE`:
 
 1. Read `STATE.md` → find current phase N.
-2. Read `.superplan/phases/phase-N.md` → full work spec.
-3. Print `SUPERPLAN_PHASE_START` block with values from the spec.
+2. Read `.supergoal/phases/phase-N.md` → full work spec.
+3. Print `SUPERGOAL_PHASE_START` block with values from the spec.
 4. Do the work; run mandatory commands; surface evidence into the transcript.
-5. Print `SUPERPLAN_PHASE_VERIFY` block (every criterion `pass|fail` + engineering checks).
+5. Print `SUPERGOAL_PHASE_VERIFY` block (every criterion `pass|fail` + engineering checks).
 6. **Memory writeback check** — anything non-obvious learned? If yes, write a memory file under the detected MEM_DIR; print `MEMORY_SAVED: <name>` (or `MEMORY_SAVED: none`).
-7. Print `SUPERPLAN_PHASE_DONE`, update `STATE.md` (mark phase N complete, set Current phase = N+1, append events line).
+7. Print `SUPERGOAL_PHASE_DONE`, update `STATE.md` (mark phase N complete, set Current phase = N+1, append events line).
 8. **User-interrupt check** — if a new user message has arrived since the last turn, pause and address it before continuing.
 9. If N < total: loop to step 1 for phase N+1.
-10. If N == total: print `SUPERPLAN_RUN_COMPLETE` with a 5-line summary. The `/goal` condition is now satisfied and clears.
+10. If N == total: print `SUPERGOAL_RUN_COMPLETE` with a 5-line summary. The `/goal` condition is now satisfied and clears.
 
 ### Failure recovery (3-strike, built into the protocol)
 
@@ -344,7 +344,7 @@ The agent's loop, repeated until `SUPERPLAN_RUN_COMPLETE`:
 
 **Second failure (auto-retry also failed):**
 1. Print `FAILURE_ESCALATE`.
-2. Write a focused **fix spec** at `.superplan/phases/phase-N.fix.md` (targets only the failing criterion, no scope creep).
+2. Write a focused **fix spec** at `.supergoal/phases/phase-N.fix.md` (targets only the failing criterion, no scope creep).
 3. Execute the fix spec inline (same agent, same `/goal` — no new dispatch). On success, re-run the original phase's VERIFY block; on pass, advance to N+1.
 
 **Third failure (fix spec also failed):**
@@ -356,7 +356,7 @@ This recovers from flaky envs, simple typos, and missed deps automatically. Only
 
 ### Mid-run interruption
 
-If the user sends any message during the `/goal` run, the agent pauses at the next phase boundary, addresses the message, and asks before resuming. Phase boundaries are after `SUPERPLAN_PHASE_DONE` and before reading the next phase spec.
+If the user sends any message during the `/goal` run, the agent pauses at the next phase boundary, addresses the message, and asks before resuming. Phase boundaries are after `SUPERGOAL_PHASE_DONE` and before reading the next phase spec.
 
 ---
 
@@ -364,7 +364,7 @@ If the user sends any message during the `/goal` run, the agent pauses at the ne
 
 Memory is load-bearing. Future runs start smarter because past runs wrote down what they learned. The phase execution loop's step 6 references these rules.
 
-**At each phase boundary**, ask: "Did this phase surface anything a future Superplan run on a similar task would benefit from knowing?"
+**At each phase boundary**, ask: "Did this phase surface anything a future Supergoal run on a similar task would benefit from knowing?"
 
 Worth saving:
 - A library API quirk that wasn't in the docs
@@ -374,7 +374,7 @@ Worth saving:
 
 Write the memory file under the detected MEM_DIR using the standard `name` / `description` / `metadata.type` frontmatter. Link it from `MEMORY.md`. Print `MEMORY_SAVED: <name>` to the transcript. If nothing non-obvious this phase: print `MEMORY_SAVED: none`.
 
-**At the final phase**, always write a `project_<slug>.md` memory pointing at the new/changed project (location, stack, status, ROADMAP link). Guarantees future Superplan runs on the same project start from the latest state.
+**At the final phase**, always write a `project_<slug>.md` memory pointing at the new/changed project (location, stack, status, ROADMAP link). Guarantees future Supergoal runs on the same project start from the latest state.
 
 **Never save:** secrets, transient task details, ephemeral state. Bar is "useful to a future run." When in doubt, skip.
 
@@ -397,9 +397,9 @@ Write the memory file under the detected MEM_DIR using the standard `name` / `de
 
 ## When to deviate from the workflow
 
-- **Very small task** (< 1 hour of work, single file): tell the user this doesn't need Superplan, suggest just doing it. Don't force the machinery.
+- **Very small task** (< 1 hour of work, single file): tell the user this doesn't need Supergoal, suggest just doing it. Don't force the machinery.
 - **The user pushes back on a phase during intake**: collapse, re-plan, continue.
-- **Mid-run interruption**: if the user stops the run and asks for a change, update the affected `.superplan/phases/phase-N.md` spec, run `validate-phase.sh` on it, then ask the user to resume (they can re-dispatch the same `/goal` or just say "continue"). No need to restart phase 1.
+- **Mid-run interruption**: if the user stops the run and asks for a change, update the affected `.supergoal/phases/phase-N.md` spec, run `validate-phase.sh` on it, then ask the user to resume (they can re-dispatch the same `/goal` or just say "continue"). No need to restart phase 1.
 
 ---
 
@@ -407,18 +407,18 @@ Write the memory file under the detected MEM_DIR using the standard `name` / `de
 
 - `references/planning-depth.md` — what makes a plan deep enough to deserve "Super"
 - `references/phase-design.md` — how to slice phases that auto-chain cleanly
-- `references/goal-format.md` — what `/goal` is on Claude Code + Codex, Superplan's single-`/goal` shape, required transcript blocks
+- `references/goal-format.md` — what `/goal` is on Claude Code + Codex, Supergoal's single-`/goal` shape, required transcript blocks
 
 ## Scripts
 
 - `scripts/detect-stack.sh` — identifies language, package manager, framework, build/test/lint commands (brownfield)
 - `scripts/detect-env.sh` — greenfield environment recon
 - `scripts/summarize-repo.sh` — compressed repo map (brownfield)
-- `scripts/validate-phase.sh` — checks a phase spec has the required SUPERPLAN_PHASE_START marker and a non-empty acceptance criteria section
+- `scripts/validate-phase.sh` — checks a phase spec has the required SUPERGOAL_PHASE_START marker and a non-empty acceptance criteria section
 
 ## Templates
 
 - `templates/ROADMAP.md` — phase plan with dependencies
 - `templates/STATE.md` — live progress file
 - `templates/phase-goal.txt` — phase spec skeleton (work, criteria, evidence, mandatory commands)
-- `templates/PROTOCOL.md` — phase execution loop, failure recovery, memory writeback (copied to `.superplan/PROTOCOL.md` at dispatch)
+- `templates/PROTOCOL.md` — phase execution loop, failure recovery, memory writeback (copied to `.supergoal/PROTOCOL.md` at dispatch)

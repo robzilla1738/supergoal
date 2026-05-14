@@ -1,13 +1,13 @@
 {
-  "name": "superplan",
-  "description": "Superplan marketplace — deep planning + autonomous /goal-driven execution for Claude Code and Codex.",
+  "name": "supergoal",
+  "description": "Supergoal marketplace — deep planning + autonomous /goal-driven execution for Claude Code and Codex.",
   "owner": {
     "name": "Robert Courson",
     "url": "https://github.com/robzilla1738"
   },
   "plugins": [
     {
-      "name": "superplan",
+      "name": "supergoal",
       "source": "./",
       "description": "Plan and autonomously build a software task end-to-end. One ready-to-paste /goal, adaptive phase count, memory preload + writeback, 3-strike self-healing recovery. Works on Claude Code and Codex."
     }

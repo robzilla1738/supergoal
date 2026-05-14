@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# detect-env.sh — environment recon for greenfield Superplan runs
+# detect-env.sh — environment recon for greenfield Supergoal runs
 # Writes markdown to stdout.
 
 set -uo pipefail

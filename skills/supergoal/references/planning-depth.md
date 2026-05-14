@@ -63,7 +63,7 @@ Three risks, ranked. For each:
 - **How likely** (gut estimate is fine)
 - **What we're doing about it** (mitigation in the plan, or accepted risk with reason)
 
-If you can't name three plausible risks, the task is either too small for Superplan or you haven't thought hard enough.
+If you can't name three plausible risks, the task is either too small for Supergoal or you haven't thought hard enough.
 
 ## What this is NOT
 
