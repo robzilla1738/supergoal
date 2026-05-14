@@ -1,5 +1,6 @@
 {
   "name": "superplan",
+  "description": "Superplan marketplace — deep planning + autonomous /goal-driven execution for Claude Code and Codex.",
   "owner": {
     "name": "Robert Courson",
     "url": "https://github.com/robzilla1738"
