@@ -4,7 +4,7 @@
 **Current phase:** —
 **Started:** {{DATE}}
 **Last update:** {{DATE}}
-**Baseline ref:** {{BASELINE_SHA}}    <!-- HEAD sha captured at Stage 7 dispatch; the final audit uses this for the deliverable diff check -->
+**Baseline ref:** {{BASELINE_SHA}}    <!-- HEAD sha captured at Stage 7 dispatch; the audit + cleanliness checks compare the COMPLETE working tree (committed + staged + unstaged + untracked) against it via repo-state.sh -->
 
 
 ## Phase progress

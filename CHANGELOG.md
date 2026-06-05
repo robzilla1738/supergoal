@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.1] — 2026-06-05
+
+Correctness + cross-platform fix for the audit/cleanliness comparison. An autonomous `/goal` run often leaves work uncommitted; the prior `git diff <Baseline ref>..HEAD` comparison compared two **commits**, so it saw none of it. The final deliverable audit and per-phase cleanliness checks now evaluate the **complete working tree** against the captured baseline. Additive and backward-compatible — every transcript marker, STATE.md field, and protocol step is preserved.
+
+### Fixed
+
+- **Audit + cleanliness no longer miss uncommitted work.** Replaced the commit-range `git diff <Baseline ref>..HEAD` in the deliverable check and the cleanliness greps with a complete-working-tree comparison: tracked changes via the single-revision `git diff <Baseline ref>` (committed + staged + unstaged + deleted) unioned with untracked-file detection. Previously a run that never committed showed an empty diff — deliverables read as "missing" and cleanliness reported 0 debug prints / TODOs / dead imports no matter what was written.
+- **Deleted-file deliverables.** A "remove X" deliverable left uncommitted is now correctly reported `present` (the deletion shows in the working-tree diff) instead of a false `AUDIT_GAP`.
+- **Shell scripts forced to LF.** `.gitattributes` (`*.sh text eol=lf`) verified correct — it overrides `core.autocrlf=true`, which on a fresh Windows checkout would otherwise produce a CRLF shebang that fails to execute. Renormalized the existing scripts that had been checked out CRLF locally.
+
+### Added
+
+- **`scripts/repo-state.sh`** — single source of truth for the comparison. Subcommands: `deliverable <baseline> <path>` (`present`/`missing` + evidence, exit 0/1), `changed-files <baseline>`, and `added-lines <baseline>` (tracked-diff additions + untracked file bodies, for the cleanliness greps). Never mutates the repo or index; degrades to a filesystem existence check when the baseline is invalid/unavailable (`no-git`, bogus sha, non-repo). Copied into `.supergoal/` at Stage 7 alongside `PROTOCOL.md`.
+- **`references/repo-state-comparison.md`** — the one documented comparison strategy. PROTOCOL.md, SKILL.md, goal-format.md, and phase-design.md defer to it.
+- **`tests/repo-state.test.sh`** — fixture tests over throwaway git repositories covering clean, modified-uncommitted, staged, untracked, deleted, committed-after-baseline, paths-with-spaces, invalid-baseline, LF-shell-script, `.gitignore`'d-file, and renamed-file scenarios. Repo-only (not part of the shipped plugin payload). 47 assertions, all green.
+
+### Changed
+
+- **`SUPERGOAL_PHASE_VERIFY` cleanliness** and **`AUDIT_VERIFY` Deliverables** now source from `repo-state.sh`. The transcript markers, block shapes, and 3-strike semantics are unchanged — only the comparison's source of truth moved from a commit range to the complete working tree, plus untracked detection.
+
+### Migration
+
+None for Claude Code (additive). Codex users must re-sync (`rm -rf ~/.codex/skills/supergoal && cp -R skills/supergoal ~/.codex/skills/supergoal`) to pick up the new `repo-state.sh` helper and reference doc.
+
 ## [0.6.0] — 2026-05-14
 
 Five additive refinements to the validation/audit loops. Every addition closes a specific real failure mode; nothing is added that could become "AI-fills-in-blanks" boilerplate. No removals — every existing transcript marker, STATE.md field, and protocol step stays put.

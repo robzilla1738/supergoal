@@ -29,7 +29,7 @@ flowchart TD
     LOOP --> CHECK{Failure?}
     CHECK -->|None| NEXT{More phases?}
     NEXT -->|Yes| LOOP
-    NEXT -->|No| AUDIT["FINAL AUDIT<br/>re-verify against ROADMAP<br/>re-run mandatory commands<br/>spot-check criteria<br/>+ diff deliverables vs Baseline ref"]
+    NEXT -->|No| AUDIT["FINAL AUDIT<br/>re-verify against ROADMAP<br/>re-run mandatory commands<br/>spot-check criteria<br/>+ check deliverables vs Baseline ref<br/>(full working tree)"]
     CHECK -->|1st| R1["Auto-retry<br/>with probe injected"]
     R1 --> LOOP
     CHECK -->|2nd| R2["Write fix-spec,<br/>execute inline"]
@@ -147,8 +147,8 @@ What happens:
 6. **Stage 5 — Write specs.** `ROADMAP.md` + `STATE.md` + one `phase-N.md` work spec per phase, all under `.supergoal/`.
 7. **Stage 6 — Self-critique + plan review.** Before showing the summary, the planner runs **one** self-critique pass that flags vague criteria, mis-sliced phases, and weak dependencies — rewriting falsifiability issues in place so the user sees the post-critique version. Then it shows the plan with assumptions, risks, applied memories, and a concrete revision menu: **Start now / Adjust assumption / Tweak a phase / Restructure phases.**
 8. **Stage 6.5 — Pre-flight smoke check.** Before the `/goal` line is printed, the planner runs the deduplicated mandatory commands once. `PREFLIGHT_GREEN` → proceed to Stage 7. `PREFLIGHT_RED` → re-show Stage 6 with a "Skip pre-flight, dispatch anyway" option (for cases where the baseline being broken is exactly what phase 1 will fix). Catches "we'd thrash 3-strike loops against a broken baseline" before it happens.
-9. **Stage 7 — Hand off.** Captures `Baseline ref:` (the current `HEAD` sha) into `STATE.md` so the final audit can diff deliverables against the working tree. Prints a ready-to-paste `/goal` line. You paste it once; the chain runs phases sequentially with 3-strike auto-retry → fix-spec → handoff, writing a memory at each phase boundary so future runs start smarter. Each `SUPERGOAL_PHASE_VERIFY` also includes a **cleanliness pass** — grep-based counts for debug prints, session TODOs, and dead imports added in this phase's diff (non-zero counts triggering 3-strike unless the spec sets `Cleanliness override:`).
-10. **Final audit (after the last phase, before `SUPERGOAL_RUN_COMPLETE`).** Re-reads the original ROADMAP, re-runs the deduplicated mandatory commands (build / typecheck / lint / tests) once at the end to catch cross-phase regressions a per-phase VERIFY can miss, spot-checks every acceptance criterion, and **diff-checks every declared deliverable against `Baseline ref`** so an "agent said done but didn't ship" case becomes a gap. On gaps it writes `audit-fix-<round>.md` and self-heals inline; up to 3 audit rounds before stopping. Only after `AUDIT_COMPLETE` does it print `SUPERGOAL_RUN_COMPLETE` — with an honest **audit coverage** line. If more than 30% of checks were `trust-prior-verify` (subjective UI/UX criteria the audit can't re-run), `SUPERGOAL_RUN_COMPLETE` prepends a warning banner asking the user to eyeball before merging.
+9. **Stage 7 — Hand off.** Captures `Baseline ref:` (the current `HEAD` sha) into `STATE.md` so the final audit can diff deliverables against the working tree. Prints a ready-to-paste `/goal` line. You paste it once; the chain runs phases sequentially with 3-strike auto-retry → fix-spec → handoff, writing a memory at each phase boundary so future runs start smarter. Each `SUPERGOAL_PHASE_VERIFY` also includes a **cleanliness pass** — grep-based counts for debug prints, session TODOs, and dead imports added across this phase's **complete working-tree changes** (committed + staged + unstaged + untracked, via `repo-state.sh`), so uncommitted debug output is caught too (non-zero counts triggering 3-strike unless the spec sets `Cleanliness override:`).
+10. **Final audit (after the last phase, before `SUPERGOAL_RUN_COMPLETE`).** Re-reads the original ROADMAP, re-runs the deduplicated mandatory commands (build / typecheck / lint / tests) once at the end to catch cross-phase regressions a per-phase VERIFY can miss, spot-checks every acceptance criterion, and **checks every declared deliverable against `Baseline ref` across the complete working tree** (committed, staged, unstaged, deleted, and untracked — not just commits) so an "agent said done but didn't ship" case becomes a gap even when the run never committed. On gaps it writes `audit-fix-<round>.md` and self-heals inline; up to 3 audit rounds before stopping. Only after `AUDIT_COMPLETE` does it print `SUPERGOAL_RUN_COMPLETE` — with an honest **audit coverage** line. If more than 30% of checks were `trust-prior-verify` (subjective UI/UX criteria the audit can't re-run), `SUPERGOAL_RUN_COMPLETE` prepends a warning banner asking the user to eyeball before merging.
 
 ## Self-healing failure recovery
 
@@ -193,13 +193,15 @@ All under `.supergoal/` in the project directory:
 skills/supergoal/
 ├── SKILL.md
 ├── references/
-│   ├── planning-depth.md      what makes a plan deep enough to deserve "Super"
-│   ├── phase-design.md        how to slice phases (adaptive count, no cap)
-│   └── goal-format.md         /goal mechanics on CC + Codex, required transcript blocks
+│   ├── planning-depth.md          what makes a plan deep enough to deserve "Super"
+│   ├── phase-design.md            how to slice phases (adaptive count, no cap)
+│   ├── goal-format.md             /goal mechanics on CC + Codex, required transcript blocks
+│   └── repo-state-comparison.md   the one comparison strategy (working tree vs baseline)
 ├── scripts/
 │   ├── detect-env.sh          greenfield env recon
 │   ├── detect-stack.sh        brownfield stack recon
 │   ├── summarize-repo.sh      repo map
+│   ├── repo-state.sh          complete working-tree-vs-baseline comparison (audit + cleanliness)
 │   └── validate-phase.sh      checks phase spec structure
 └── templates/
     ├── ROADMAP.md
@@ -215,7 +217,7 @@ skills/supergoal/
 
 ## Version
 
-Current: **v0.6.0**. See [CHANGELOG.md](CHANGELOG.md) for release notes.
+Current: **v0.6.1**. See [CHANGELOG.md](CHANGELOG.md) for release notes.
 
 Marketplace consumers can pin a specific version via the `/plugin` UI. Auto-updates are off by default for third-party marketplaces — enable per-marketplace via `/plugin` → **Marketplaces** if you want them.
 

@@ -68,7 +68,7 @@ Engineering:
 - typecheck: <pass|fail>
 - lint: <pass|fail|pre-existing>
 - tests: <pass|fail|N pre-existing>
-Cleanliness (grep vs Baseline ref; non-zero unless phase spec sets "Cleanliness override:"):
+Cleanliness (grep `repo-state.sh added-lines` vs Baseline ref — incl. uncommitted + untracked; non-zero unless phase spec sets "Cleanliness override:"):
 - debug prints added (console.log / print / etc.): <count>
 - session TODO/FIXME added: <count>
 - dead imports added: <count>
@@ -113,8 +113,8 @@ Re-run mandatory commands:
 Acceptance criteria spot-check:
 - Phase 1 / "<criterion>": <pass | fail | trust-prior-verify> — <evidence>
 - ...
-Deliverables (filesystem ground-truth check vs Baseline ref):
-- Phase 1 / "<deliverable bullet>": <present | missing> — <git diff --stat path | ls path>
+Deliverables (complete-working-tree check vs Baseline ref via repo-state.sh):
+- Phase 1 / "<deliverable bullet>": <present | missing> — <repo-state.sh deliverable evidence>
 - Phase 2 / "<deliverable bullet>": <present | missing> — <evidence>
 - ...
 Summary: <pass count> pass, <fail count> fail, <trust count> trust-prior, <missing count> deliverable-gaps
