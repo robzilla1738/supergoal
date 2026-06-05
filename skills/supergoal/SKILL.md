@@ -362,7 +362,7 @@ After Stage 6 returns "Start now" and **before** printing the `/goal` block, run
 Slash commands on both Claude Code and Codex fire **only from user input** — agent message text is never parsed as a command. So Stage 7 is not an automatic dispatch; it's an honest one-paste handoff. After explicit "Start now" in Stage 6:
 
 1. Update `STATE.md`: `Status: READY_TO_DISPATCH`, `Current phase: 1`, and **capture the baseline ref** — set `Baseline ref:` to the output of `git rev-parse HEAD 2>/dev/null || echo "no-git"`. The audit reads this to diff deliverables against the working tree.
-2. Copy `$SUPERGOAL_DIR/templates/PROTOCOL.md` to `.supergoal/PROTOCOL.md`. This is the operating manual the executing agent reads at the start of the `/goal` session.
+2. Copy `$SUPERGOAL_DIR/templates/PROTOCOL.md` to `.supergoal/PROTOCOL.md` (the operating manual the executing agent reads at the start of the `/goal` session), and copy `$SUPERGOAL_DIR/scripts/repo-state.sh` to `.supergoal/repo-state.sh` (the complete-working-tree comparison helper the cleanliness + deliverable checks invoke; strategy in `references/repo-state-comparison.md`).
 3. Verify each `.supergoal/phases/phase-N.md` exists; run `bash $SUPERGOAL_DIR/scripts/validate-phase.sh .supergoal/phases/phase-<N>.md` on each.
 4. Print a fenced code block with the **ready-to-paste `/goal` command** — the condition below is short, instructional but measurable, and well under the 4000-char `/goal` argument limit:
 
@@ -390,7 +390,7 @@ The agent's loop, repeated until `SUPERGOAL_RUN_COMPLETE`:
 2. Read `.supergoal/phases/phase-N.md` → full work spec.
 3. Print `SUPERGOAL_PHASE_START` block with values from the spec.
 4. Do the work; run mandatory commands; surface evidence into the transcript.
-5. Print `SUPERGOAL_PHASE_VERIFY` block (every criterion `pass|fail` + engineering checks + **cleanliness checks** — grep `git diff <Baseline ref>..HEAD` for stack-specific debug prints, session TODO/FIXME, dead imports; non-zero counts trigger 3-strike unless the phase spec declares `Cleanliness override:`).
+5. Print `SUPERGOAL_PHASE_VERIFY` block (every criterion `pass|fail` + engineering checks + **cleanliness checks** — grep `bash .supergoal/repo-state.sh added-lines <Baseline ref>` (complete added/new lines since baseline, **including uncommitted and untracked work**) for stack-specific debug prints, session TODO/FIXME, dead imports; non-zero counts trigger 3-strike unless the phase spec declares `Cleanliness override:`).
 6. **Memory writeback check** — anything non-obvious learned? If yes, write a memory file under the detected MEM_DIR; print `MEMORY_SAVED: <name>` (or `MEMORY_SAVED: none`).
 7. Print `SUPERGOAL_PHASE_DONE`, update `STATE.md` (mark phase N complete, set Current phase = N+1, append events line).
 8. **User-interrupt check** — if a new user message has arrived since the last turn, pause and address it before continuing.
@@ -412,7 +412,7 @@ The audit runs once after the final phase. If it finds gaps, it writes a focused
 5. **Spot-check verifiable criteria** — for each acceptance criterion across all phases:
    - "File X exists" / "Function Y exported" / "Config key Z set" / "No `console.log` in app code" → re-check via `ls`/`grep`/`cat`.
    - "Screenshot showed X" / "Manual smoke test passed" / other non-deterministic checks → mark `trust-prior-verify`, do not re-run.
-5b. **Deliverable check** — for each phase block in `ROADMAP.md`, parse the `**Deliverables:**` bullets. For each bullet that names a file path or glob, run `git diff --stat <Baseline ref>..HEAD -- <path>` (fall back to `ls`/`git ls-files` for pure creation patterns). Missing files / empty diff → `AUDIT_GAP: phase <N> deliverable "<bullet>" not present`. Filesystem ground-truth — catches "agent said done but didn't ship."
+5b. **Deliverable check** — for each phase block in `ROADMAP.md`, parse the `**Deliverables:**` bullets. For each bullet that names a file path or glob, run `bash .supergoal/repo-state.sh deliverable <Baseline ref> "<path>"` — it checks the **complete working tree** (committed + staged + unstaged + deleted) against the baseline and detects untracked new files separately. `missing` (exit 1) → `AUDIT_GAP: phase <N> deliverable "<bullet>" not present`. Repository ground-truth — catches "agent said done but didn't ship," even when the run never committed. Strategy: `references/repo-state-comparison.md`.
 6. Print `AUDIT_VERIFY` block:
    - Per-phase status (DONE present or missing)
    - Each mandatory command's exit code

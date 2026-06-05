@@ -65,7 +65,7 @@ Good:
 
 ## Cleanliness (grep-checked at VERIFY)
 
-Every phase's VERIFY block reports three grep-based counts against `git diff <Baseline ref>..HEAD`:
+Every phase's VERIFY block reports three grep-based counts against the complete set of added/new lines since the baseline — `bash .supergoal/repo-state.sh added-lines <Baseline ref>` (includes uncommitted + untracked work, not just committed; see `repo-state-comparison.md`):
 
 - **Debug prints added** — `console.log`/`console.error` for JS/TS, `print(`/`pprint(` for Python, `print(`/`dump(` for Swift, `fmt.Println`/`log.Println` for Go (adjust per stack).
 - **Session TODO/FIXME added** — `\b(TODO|FIXME|XXX)\b` introduced in this run's diff (not pre-existing).

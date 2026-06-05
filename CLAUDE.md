@@ -13,10 +13,12 @@ Full project doc: see [AGENTS.md](AGENTS.md).
 ### File map you actually edit
 
 - `skills/supergoal/SKILL.md` — the skill content. Edit here for behavioral changes. ~520 lines (over the prior 500-line soft budget after v0.6; phase-loop section duplicates `PROTOCOL.md` and is a slim-down candidate).
-- `skills/supergoal/references/*.md` — progressive-disclosure docs the agent reads when needed (`planning-depth.md`, `phase-design.md`, `goal-format.md`).
+- `skills/supergoal/references/*.md` — progressive-disclosure docs the agent reads when needed (`planning-depth.md`, `phase-design.md`, `goal-format.md`, `repo-state-comparison.md`).
+- `skills/supergoal/scripts/repo-state.sh` — the complete-working-tree-vs-baseline comparison helper. Edit here to change how the audit/cleanliness checks detect committed/staged/unstaged/deleted/untracked work. Copied into `.supergoal/` at Stage 7; tested by `tests/repo-state.test.sh`.
 - `skills/supergoal/templates/PROTOCOL.md` — execution loop + failure recovery + final audit. Edit here when changing the per-`/goal`-session protocol.
-- `skills/supergoal/templates/STATE.md` — live-progress template the planner copies to `.supergoal/STATE.md` per run. Contains `Baseline ref:` (the HEAD sha captured at Stage 7 dispatch; the final audit reads it to diff deliverables).
+- `skills/supergoal/templates/STATE.md` — live-progress template the planner copies to `.supergoal/STATE.md` per run. Contains `Baseline ref:` (the HEAD sha captured at Stage 7 dispatch; the audit + cleanliness checks compare the complete working tree against it via `repo-state.sh`).
 - `skills/supergoal/templates/ROADMAP.md` — phase plan with `Deliverables:` bullets; the audit's deliverable check parses these bullets directly.
+- `tests/repo-state.test.sh` — fixture tests for `repo-state.sh` (repo-only; run with `bash tests/repo-state.test.sh`).
 - `.claude-plugin/plugin.json` — bump `version` on every shipped change so the marketplace cache refreshes.
 - `CHANGELOG.md` — add a top entry per release.
 - `README.md` — public-facing only. Edit for docs / Mermaid diagram tweaks. No version bump needed.
@@ -27,9 +29,10 @@ Full project doc: see [AGENTS.md](AGENTS.md).
 claude plugin validate .claude-plugin/plugin.json
 claude plugin validate .claude-plugin/marketplace.json
 bash skills/supergoal/scripts/validate-phase.sh skills/supergoal/templates/phase-goal.txt
+bash tests/repo-state.test.sh   # expects: 47 passed, 0 failed
 ```
 
-All three should return `✔ Validation passed`.
+The first three should return `✔ Validation passed`; the test run should end `All fixture scenarios passed.`
 
 ### Local install testing
 
@@ -102,7 +105,7 @@ The `/goal` end-state requires `SUPERGOAL_RUN_COMPLETE` preceded by `AUDIT_COMPL
 - **Codex install is a one-way copy** → users have to re-clone on update. Mention in any breaking-change CHANGELOG.
 - **The skill description is the trigger** → tweak it carefully. Lead with `/supergoal` and natural-language phrases users actually type. Keep it pushy.
 - **Updating SKILL.md/PROTOCOL.md? Codex stays in sync only via manual `rm -rf … && cp -R …`.** After any shipped change, re-run the copy and verify with `diff -r skills/supergoal ~/.codex/skills/supergoal` → expect `(no output)`. AGENTS.md's "Working state" section documents the latest verified sync.
-- **v0.6 cleanliness greps run against `git diff <Baseline ref>..HEAD`** — `Baseline ref:` is captured at Stage 7 from `git rev-parse HEAD 2>/dev/null || echo "no-git"`. If a user runs `/supergoal` in a directory without git history, the audit's diff check falls back to `ls`/`git ls-files`, but the cleanliness counts will have no diff to grep — phases in that mode should treat cleanliness as `trust-prior-verify`-shaped.
+- **v0.6.1 cleanliness + deliverable checks compare the COMPLETE working tree vs `Baseline ref` via `repo-state.sh`** — not a `<Baseline ref>..HEAD` commit range (that missed every uncommitted change, the bug v0.6.1 fixed). Tracked changes come from the single-revision `git diff <Baseline ref>` (committed + staged + unstaged + deleted); untracked files are detected separately. `Baseline ref:` is still captured at Stage 7 from `git rev-parse HEAD 2>/dev/null || echo "no-git"`. If a user runs `/supergoal` in a directory without git history (or any invalid/unresolvable baseline), `repo-state.sh` degrades to a filesystem existence check and `added-lines` yields nothing — cleanliness counts go to 0, so phases in that mode should treat cleanliness as `trust-prior-verify`-shaped. The one documented strategy lives in `references/repo-state-comparison.md`; the logic is implemented once in `repo-state.sh` and tested by `tests/repo-state.test.sh`.
 - **Honesty test for v0.6 Stage 6a self-critique**: if it produces `clean` on essentially every real plan, it's theater and gets dropped. AGENTS.md "Open work" tracks the heuristic — don't defend the feature for its own sake.
 
 ## When in doubt
