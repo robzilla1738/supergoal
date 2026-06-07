@@ -15,7 +15,7 @@ run, `git diff <baseline>..HEAD` is **empty**:
 - the cleanliness greps would report "0 debug prints / 0 TODOs / 0 dead imports" no matter what
   was actually written.
 
-The baseline (`Baseline ref:` in `.supergoal/STATE.md`) is captured at Stage 7 dispatch, before
+The baseline (`Baseline ref:` in `<run-root>/STATE.md`) is captured at Stage 7 dispatch, before
 any phase runs. By completion the working tree — not just `HEAD` — holds the result. So the
 comparison must be **baseline → working tree**, not **baseline → HEAD**.
 
@@ -46,19 +46,20 @@ inspected, declare a `Cleanliness override:` in the phase spec rather than relyi
 
 Don't hand-type the git incantations — the single-revision-vs-range distinction is exactly the
 bug this exists to prevent. Use the helper, which encapsulates the table above and never mutates
-the repo or index. At Stage 7 it is copied next to `PROTOCOL.md` into `.supergoal/`, so the
-`/goal` session invokes it as `bash .supergoal/repo-state.sh`.
+the repo or index. At Stage 7 it is copied next to `PROTOCOL.md` into `<run-root>/` (this run's
+namespaced artifact dir, e.g. `.supergoal/add-dark-mode-Ab3Kx9`), so the `/goal` session invokes
+it as `bash <run-root>/repo-state.sh`.
 
 ```
-bash .supergoal/repo-state.sh deliverable   <baseline> <path>
+bash <run-root>/repo-state.sh deliverable   <baseline> <path>
     -> "present — <evidence>" (exit 0) | "missing" (exit 1)
        evidence distinguishes: changed vs baseline / untracked new file /
        exists-unchanged / baseline-unavailable
 
-bash .supergoal/repo-state.sh changed-files <baseline>
+bash <run-root>/repo-state.sh changed-files <baseline>
     -> newline-delimited paths changed since baseline (tracked + untracked + deleted)
 
-bash .supergoal/repo-state.sh added-lines   <baseline>
+bash <run-root>/repo-state.sh added-lines   <baseline>
     -> every added/new line since baseline: tracked-diff '+' lines plus the full body
        of each untracked file. Pipe to grep for cleanliness counts.
 ```
@@ -70,7 +71,7 @@ Quote path arguments — deliverable paths may contain spaces.
 For each `**Deliverables:**` bullet that names a path/glob:
 
 ```
-bash .supergoal/repo-state.sh deliverable "$(baseline)" "<path>"
+bash <run-root>/repo-state.sh deliverable "$(baseline)" "<path>"
 ```
 
 `missing` (exit 1) → `AUDIT_GAP: phase <N> deliverable "<bullet>" not present in working tree or diff`.
@@ -78,7 +79,7 @@ bash .supergoal/repo-state.sh deliverable "$(baseline)" "<path>"
 ### Per-phase cleanliness check
 
 ```
-bash .supergoal/repo-state.sh added-lines "$(baseline)" > /tmp/sg-added
+bash <run-root>/repo-state.sh added-lines "$(baseline)" > /tmp/sg-added
 grep -cE 'console\.log|console\.error' /tmp/sg-added   # JS/TS debug prints (adjust per stack)
 grep -cE '\b(TODO|FIXME|XXX)\b'        /tmp/sg-added   # session TODO/FIXME added
 # dead imports: inspect added import lines for usage in their file

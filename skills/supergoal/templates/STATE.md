@@ -4,6 +4,7 @@
 **Current phase:** —
 **Started:** {{DATE}}
 **Last update:** {{DATE}}
+**Run root:** {{RUN_ROOT}}    <!-- this run's namespaced artifact dir under .supergoal/ (e.g. .supergoal/add-dark-mode-Ab3Kx9); isolates concurrent runs in the same working tree -->
 **Baseline ref:** {{BASELINE_SHA}}    <!-- HEAD sha captured at Stage 7 dispatch; the audit + cleanliness checks compare the COMPLETE working tree (committed + staged + unstaged + untracked) against it via repo-state.sh -->
 
 

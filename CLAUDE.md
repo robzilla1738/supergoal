@@ -12,12 +12,14 @@ Full project doc: see [AGENTS.md](AGENTS.md).
 
 ### File map you actually edit
 
-- `skills/supergoal/SKILL.md` — the skill content. Edit here for behavioral changes. ~520 lines (over the prior 500-line soft budget after v0.6; phase-loop section duplicates `PROTOCOL.md` and is a slim-down candidate).
+- `skills/supergoal/SKILL.md` — the skill content. Edit here for behavioral changes. ~565 lines (grew with v0.7's Stage 0 namespace-claim section; phase-loop section duplicates `PROTOCOL.md` and is a slim-down candidate).
 - `skills/supergoal/references/*.md` — progressive-disclosure docs the agent reads when needed (`planning-depth.md`, `phase-design.md`, `goal-format.md`, `repo-state-comparison.md`).
-- `skills/supergoal/scripts/repo-state.sh` — the complete-working-tree-vs-baseline comparison helper. Edit here to change how the audit/cleanliness checks detect committed/staged/unstaged/deleted/untracked work. Copied into `.supergoal/` at Stage 7; tested by `tests/repo-state.test.sh`.
-- `skills/supergoal/templates/PROTOCOL.md` — execution loop + failure recovery + final audit. Edit here when changing the per-`/goal`-session protocol.
-- `skills/supergoal/templates/STATE.md` — live-progress template the planner copies to `.supergoal/STATE.md` per run. Contains `Baseline ref:` (the HEAD sha captured at Stage 7 dispatch; the audit + cleanliness checks compare the complete working tree against it via `repo-state.sh`).
+- `skills/supergoal/scripts/claim-run.sh` — atomically claims a unique per-run dir (`.supergoal/<slug>-XXXXXX` via `mktemp -d`) so concurrent runs in one working tree can't clobber each other. Edit here to change the namespacing/slug logic; tested by `tests/claim-run.test.sh`.
+- `skills/supergoal/scripts/repo-state.sh` — the complete-working-tree-vs-baseline comparison helper. Edit here to change how the audit/cleanliness checks detect committed/staged/unstaged/deleted/untracked work. Copied into the run's `.supergoal/<run-id>/` dir at Stage 7; tested by `tests/repo-state.test.sh`.
+- `skills/supergoal/templates/PROTOCOL.md` — execution loop + failure recovery + final audit. Edit here when changing the per-`/goal`-session protocol. Paths use the `{{RUN_ROOT}}` placeholder, `sed`-substituted to the concrete run dir at Stage 7.
+- `skills/supergoal/templates/STATE.md` — live-progress template the planner copies to `<run-root>/STATE.md` per run. Contains `Run root:` (this run's namespaced dir) and `Baseline ref:` (the HEAD sha captured at Stage 7 dispatch; the audit + cleanliness checks compare the complete working tree against it via `repo-state.sh`).
 - `skills/supergoal/templates/ROADMAP.md` — phase plan with `Deliverables:` bullets; the audit's deliverable check parses these bullets directly.
+- `tests/claim-run.test.sh` — fixture tests for `claim-run.sh`, incl. the concurrent-claim race (repo-only; run with `bash tests/claim-run.test.sh`).
 - `tests/repo-state.test.sh` — fixture tests for `repo-state.sh` (repo-only; run with `bash tests/repo-state.test.sh`).
 - `.claude-plugin/plugin.json` — bump `version` on every shipped change so the marketplace cache refreshes.
 - `CHANGELOG.md` — add a top entry per release.
@@ -30,9 +32,10 @@ claude plugin validate .claude-plugin/plugin.json
 claude plugin validate .claude-plugin/marketplace.json
 bash skills/supergoal/scripts/validate-phase.sh skills/supergoal/templates/phase-goal.txt
 bash tests/repo-state.test.sh   # expects: 47 passed, 0 failed
+bash tests/claim-run.test.sh    # expects: 23 passed, 0 failed
 ```
 
-The first three should return `✔ Validation passed`; the test run should end `All fixture scenarios passed.`
+The first three should return `✔ Validation passed`; both test runs should end `All fixture scenarios passed.`
 
 ### Local install testing
 
@@ -107,6 +110,7 @@ The `/goal` end-state requires `SUPERGOAL_RUN_COMPLETE` preceded by `AUDIT_COMPL
 - **Updating SKILL.md/PROTOCOL.md? Codex stays in sync only via manual `rm -rf … && cp -R …`.** After any shipped change, re-run the copy and verify with `diff -r skills/supergoal ~/.codex/skills/supergoal` → expect `(no output)`. AGENTS.md's "Working state" section documents the latest verified sync.
 - **v0.6.1 cleanliness + deliverable checks compare the COMPLETE working tree vs `Baseline ref` via `repo-state.sh`** — not a `<Baseline ref>..HEAD` commit range (that missed every uncommitted change, the bug v0.6.1 fixed). Tracked changes come from the single-revision `git diff <Baseline ref>` (committed + staged + unstaged + deleted); untracked files are detected separately. `Baseline ref:` is still captured at Stage 7 from `git rev-parse HEAD 2>/dev/null || echo "no-git"`. If a user runs `/supergoal` in a directory without git history (or any invalid/unresolvable baseline), `repo-state.sh` degrades to a filesystem existence check and `added-lines` yields nothing — cleanliness counts go to 0, so phases in that mode should treat cleanliness as `trust-prior-verify`-shaped. The one documented strategy lives in `references/repo-state-comparison.md`; the logic is implemented once in `repo-state.sh` and tested by `tests/repo-state.test.sh`.
 - **Honesty test for v0.6 Stage 6a self-critique**: if it produces `clean` on essentially every real plan, it's theater and gets dropped. AGENTS.md "Open work" tracks the heuristic — don't defend the feature for its own sake.
+- **v0.7 namespaces every run under `.supergoal/<run-id>/`** (claimed atomically by `scripts/claim-run.sh` via `mktemp -d`). This is what stops two concurrent `/supergoal` runs in one working tree from clobbering each other's `STATE.md`/`ROADMAP.md`/`phases/`. Two consequences: (a) `PROTOCOL.md` + `phase-goal.txt` use a `{{RUN_ROOT}}` placeholder — Stage 7 `sed`-substitutes the concrete dir into the copied `PROTOCOL.md`, and the planner fills it into each phase spec; if you add a new `.supergoal/`-relative path to a template, use `{{RUN_ROOT}}/…`, not `.supergoal/…`. (b) Namespacing protects **planning** artifacts only — two `/goal` **executions** in the same tree still edit the same source files, so the Stage 0 coexistence warning steers parallel execution to separate `git worktree`s. Don't soften that warning into "parallel runs are safe."
 
 ## When in doubt
 

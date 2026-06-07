@@ -16,18 +16,18 @@ Key implications:
 
 Supergoal uses **one** `/goal` per run, dispatched by the **user** at the end of Stage 7. Slash commands fire only from user input on both Claude Code and Codex — the planner cannot fire `/goal` from its own message text. Stage 7's job is to write all phase specs to disk, then print a copy-paste-ready `/goal` block. The user pastes once; from there, the run is autonomous.
 
-The condition is:
+The condition is (`<run-root>` is this run's namespaced artifact dir, e.g. `.supergoal/add-dark-mode-Ab3Kx9`; the planner substitutes the concrete path before printing the block so the pasted line carries the real directory — never the placeholder):
 
 ```
-Execute all phases of .supergoal/ROADMAP.md sequentially.
-Read .supergoal/phases/phase-N.md for each phase; do the work;
+Execute all phases of <run-root>/ROADMAP.md sequentially.
+Read <run-root>/phases/phase-N.md for each phase; do the work;
 run mandatory commands; print SUPERGOAL_PHASE_VERIFY then
 SUPERGOAL_PHASE_DONE for each phase; follow the failure-recovery
-protocol in .supergoal/PROTOCOL.md if any criterion fails. After
-the last phase, run the FINAL AUDIT in PROTOCOL.md (re-verify
-against ROADMAP.md; re-run aggregated mandatory commands;
-spot-check criteria; on gaps, write audit-fix-<round>.md and
-execute inline). Only after AUDIT_COMPLETE, print
+protocol in <run-root>/PROTOCOL.md if any criterion fails. After
+the last phase, run the FINAL AUDIT in <run-root>/PROTOCOL.md (re-verify
+against <run-root>/ROADMAP.md; re-run aggregated mandatory commands;
+spot-check criteria; on gaps, write <run-root>/phases/audit-fix-<round>.md
+and execute inline). Only after AUDIT_COMPLETE, print
 SUPERGOAL_RUN_COMPLETE.
 
 Done when SUPERGOAL_RUN_COMPLETE appears in the transcript with
@@ -128,7 +128,7 @@ Round: <N>
 Gaps:
 - <gap 1>: <details>
 - <gap 2>: <details>
-Writing fix spec at .supergoal/phases/audit-fix-<N>.md, executing inline.
+Writing fix spec at <run-root>/phases/audit-fix-<N>.md, executing inline.
 ```
 
 ### `AUDIT_COMPLETE` (zero gaps — emit before SUPERGOAL_RUN_COMPLETE)
@@ -151,7 +151,7 @@ Round: 3
 Persistent gaps:
 - <gap>
 - ...
-Three audit rounds attempted; fix specs at .supergoal/phases/audit-fix-{1,2,3}.md
+Three audit rounds attempted; fix specs at <run-root>/phases/audit-fix-{1,2,3}.md
 Suggested next move: <one line>
 STATE.md updated to BLOCKED.
 ```
@@ -190,7 +190,7 @@ Failed criterion: <text>
 Retry probe history:
   attempt 1: <summary>
   attempt 2: <summary>
-Writing fix spec at .supergoal/phases/phase-<N>.fix.md
+Writing fix spec at <run-root>/phases/phase-<N>.fix.md
 ```
 
 ### `FAILURE_HANDOFF` (third failure — stop)

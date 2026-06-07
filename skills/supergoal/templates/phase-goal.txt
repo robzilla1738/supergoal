@@ -1,7 +1,9 @@
-# Phase spec template — write to .supergoal/phases/phase-N.md
+# Phase spec template — write to {{RUN_ROOT}}/phases/phase-N.md
+# ({{RUN_ROOT}} is this run's namespaced dir, e.g. .supergoal/add-dark-mode-Ab3Kx9;
+#  substitute the concrete path along with the other {{...}} placeholders below.)
 #
 # This is a free-form work spec the executing agent reads from disk.
-# No char budget. The agent follows .supergoal/PROTOCOL.md for the
+# No char budget. The agent follows {{RUN_ROOT}}/PROTOCOL.md for the
 # execution loop, failure recovery, and memory writeback.
 #
 # Replace {{...}} placeholders. Keep the SUPERGOAL_PHASE_START block
@@ -53,5 +55,5 @@ Depends on phases: {{DEPS}}
 The agent will, during execution, print SUPERGOAL_PHASE_START (above),
 do the work, then print SUPERGOAL_PHASE_VERIFY, MEMORY_SAVED, and
 SUPERGOAL_PHASE_DONE in order. On failure, the agent follows the
-3-strike recovery protocol in .supergoal/PROTOCOL.md without further
+3-strike recovery protocol in {{RUN_ROOT}}/PROTOCOL.md without further
 instruction needed here.

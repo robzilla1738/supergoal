@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] — 2026-06-06
+
+Concurrent-run isolation. Two `/supergoal` runs started in the same working tree both defaulted to a single flat `.supergoal/` directory and overwrote each other's `STATE.md` / `ROADMAP.md` / `phases/` / `applied-memories.md` — a real, observed data-loss bug. Every run now claims its **own** namespaced subdirectory under `.supergoal/`, so the planning artifacts of two runs can never collide.
+
+### Fixed
+
+- **Concurrent runs no longer clobber each other's artifacts.** The root cause was a check-then-write race: each run independently decided `.supergoal/` was its workspace and wrote the same paths. Runs now claim a unique per-run directory via `mktemp -d` (atomic create-or-fail), so two simultaneous starts always land on distinct dirs — even when their task slugs are identical.
+
+### Added
+
+- **`scripts/repo-state.sh`'s sibling, `scripts/claim-run.sh`** — atomically claims `.supergoal/<slug>-XXXXXX` for a run and prints the path. Honours `$SUPERGOAL_BASE`; degrades to a safe `run-` slug for empty/garbage task strings; creates the base dir on demand. This is the load-bearing primitive of the fix.
+- **`tests/claim-run.test.sh`** — fixture tests for the claim primitive. The headline assertion is the **race test**: 24 simultaneous claims of an identical slug must yield 24 distinct directories. Also covers slug derivation, sequential uniqueness, empty/garbage fallback, on-demand base creation, and `$SUPERGOAL_BASE` override. Repo-only (not shipped). 23 assertions, all green.
+- **Coexistence notice (Stage 0).** When a fresh run detects another active run in the same working tree, it prints a prominent warning: planning artifacts are isolated, **but two `/goal` executions in the same tree still edit the same source files and clobber each other's code** — for true parallel execution, use a separate `git worktree` per task (or resume the existing run).
+- **`Run root:` field in `STATE.md`** — records the run's namespaced dir for resume detection and the audit.
+
+### Changed
+
+- **All run artifacts live under a per-run namespace.** `SKILL.md` introduces `$SUPERGOAL_BASE` (the `.supergoal/` parent) and sets `$SUPERGOAL_ROOT` to the claimed per-run subdir in Stage 0. `PROTOCOL.md` and `phase-goal.txt` use a `{{RUN_ROOT}}` placeholder; Stage 7 `sed`-substitutes the concrete path into the copied `PROTOCOL.md`, and the planner fills it into each phase spec. The dispatched `/goal` line and the reference docs (`goal-format.md`, `repo-state-comparison.md`, `phase-design.md`) now reference `<run-root>/…` instead of a hardcoded `.supergoal/…`.
+- **Stage 0 resume detection is namespace-aware** — it scans `.supergoal/*/STATE.md` (plus the legacy flat `.supergoal/STATE.md`) for active runs and either resumes the matching one or coexists with it.
+- **Removed a vestigial `mkdir -p "$SUPERGOAL_ROOT/goals"`** from the locate block (the `goals/` subdir was created but never used anywhere).
+
+### Migration
+
+The on-disk layout moved from flat `.supergoal/` to `.supergoal/<run-id>/`. No action needed for Claude Code (the skill manages its own dirs; pre-0.7 in-progress runs are still detected via the legacy flat-layout scan). Codex users must re-sync (`rm -rf ~/.codex/skills/supergoal && cp -R skills/supergoal ~/.codex/skills/supergoal`) to pick up `claim-run.sh` and the namespacing logic. Any tooling that assumed a flat `.supergoal/ROADMAP.md` path should read the run dir from `.supergoal/<run-id>/`.
+
 ## [0.6.1] — 2026-06-05
 
 Correctness + cross-platform fix for the audit/cleanliness comparison. An autonomous `/goal` run often leaves work uncommitted; the prior `git diff <Baseline ref>..HEAD` comparison compared two **commits**, so it saw none of it. The final deliverable audit and per-phase cleanliness checks now evaluate the **complete working tree** against the captured baseline. Additive and backward-compatible — every transcript marker, STATE.md field, and protocol step is preserved.

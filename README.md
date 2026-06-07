@@ -144,7 +144,7 @@ What happens:
 3. **Stage 2 — Recon.** Parallel codebase/environment scan.
 4. **Stage 3 — Deep think.** Identifies top-3 risks + dependencies. Uses Context7/WebSearch if available (optional, not required).
 5. **Stage 4 — Decompose.** Phase count derived from the task — no fixed cap. Small change = 2 phases; full-stack greenfield = 8–12+.
-6. **Stage 5 — Write specs.** `ROADMAP.md` + `STATE.md` + one `phase-N.md` work spec per phase, all under `.supergoal/`.
+6. **Stage 5 — Write specs.** `ROADMAP.md` + `STATE.md` + one `phase-N.md` work spec per phase, all under the run's namespaced `.supergoal/<run-id>/` dir.
 7. **Stage 6 — Self-critique + plan review.** Before showing the summary, the planner runs **one** self-critique pass that flags vague criteria, mis-sliced phases, and weak dependencies — rewriting falsifiability issues in place so the user sees the post-critique version. Then it shows the plan with assumptions, risks, applied memories, and a concrete revision menu: **Start now / Adjust assumption / Tweak a phase / Restructure phases.**
 8. **Stage 6.5 — Pre-flight smoke check.** Before the `/goal` line is printed, the planner runs the deduplicated mandatory commands once. `PREFLIGHT_GREEN` → proceed to Stage 7. `PREFLIGHT_RED` → re-show Stage 6 with a "Skip pre-flight, dispatch anyway" option (for cases where the baseline being broken is exactly what phase 1 will fix). Catches "we'd thrash 3-strike loops against a broken baseline" before it happens.
 9. **Stage 7 — Hand off.** Captures `Baseline ref:` (the current `HEAD` sha) into `STATE.md` so the final audit can diff deliverables against the working tree. Prints a ready-to-paste `/goal` line. You paste it once; the chain runs phases sequentially with 3-strike auto-retry → fix-spec → handoff, writing a memory at each phase boundary so future runs start smarter. Each `SUPERGOAL_PHASE_VERIFY` also includes a **cleanliness pass** — grep-based counts for debug prints, session TODOs, and dead imports added across this phase's **complete working-tree changes** (committed + staged + unstaged + untracked, via `repo-state.sh`), so uncommitted debug output is caught too (non-zero counts triggering 3-strike unless the spec sets `Cleanliness override:`).
@@ -164,28 +164,32 @@ Flaky envs, typos, and missed deps self-resolve. Only real blockers escalate.
 
 Each phase ends with a "non-obvious learnings" check. If anything a future run on a similar task would benefit from was learned (an API quirk, a confirmed user preference, a project-level fact, a failure-and-fix pattern), it's saved to your memory directory using the standard `name`/`description`/`metadata.type` frontmatter. The final phase always writes a `project_<slug>.md` memory pointing at the new/changed project.
 
-The memory directory is auto-detected from a cascade: `$HOME/.claude/projects/-Users-$(whoami)/memory`, `$HOME/.claude/memory`, `$PWD/.claude/memory`, `.supergoal/memory`. The skill works with or without a memory directory; it just starts smarter when one is present.
+The memory directory is auto-detected from a cascade: `$HOME/.claude/projects/-Users-$(whoami)/memory`, `$HOME/.claude/memory`, `$PWD/.claude/memory`, `<run-root>/memory`. The skill works with or without a memory directory; it just starts smarter when one is present.
 
 ## Artifacts a run produces
 
-All under `.supergoal/` in the project directory:
+Each run gets its **own** namespaced subdirectory under `.supergoal/` (e.g. `.supergoal/add-dark-mode-Ab3Kx9/`), claimed atomically at start, so two runs in the same working tree never overwrite each other:
 
 ```
 .supergoal/
-├── ROADMAP.md            full plan
-├── STATE.md              live progress, updated per phase
-├── THINKING.md           risks, dependencies, applied memories, best practices
-├── PROTOCOL.md           execution loop + failure recovery (copied at dispatch)
-├── context.md            recon output
-├── repo-map.md           brownfield only
-├── applied-memories.md   memory hits that informed the plan
-├── tools.md              detected MCPs / skills / hosts
-└── phases/
-    ├── phase-1.md
-    ├── phase-2.md
-    ├── ...
-    └── phase-N.md
+└── <task-slug>-<id>/         one isolated dir per run
+    ├── ROADMAP.md            full plan
+    ├── STATE.md              live progress (incl. Run root + Baseline ref), updated per phase
+    ├── THINKING.md           risks, dependencies, applied memories, best practices
+    ├── PROTOCOL.md           execution loop + failure recovery (copied at dispatch)
+    ├── repo-state.sh         complete working-tree-vs-baseline helper (copied at dispatch)
+    ├── context.md            recon output
+    ├── repo-map.md           brownfield only
+    ├── applied-memories.md   memory hits that informed the plan
+    ├── tools.md              detected MCPs / skills / hosts
+    └── phases/
+        ├── phase-1.md
+        ├── phase-2.md
+        ├── ...
+        └── phase-N.md
 ```
+
+Two `/supergoal` **planning** sessions can safely share a working tree — their artifacts are isolated. Running two `/goal` **executions** in the same tree is still unsafe (they edit the same source files), so use a separate `git worktree` per task for true parallel builds.
 
 ## Skill internals
 
@@ -198,6 +202,7 @@ skills/supergoal/
 │   ├── goal-format.md             /goal mechanics on CC + Codex, required transcript blocks
 │   └── repo-state-comparison.md   the one comparison strategy (working tree vs baseline)
 ├── scripts/
+│   ├── claim-run.sh           atomically claims a unique per-run dir (concurrent-run isolation)
 │   ├── detect-env.sh          greenfield env recon
 │   ├── detect-stack.sh        brownfield stack recon
 │   ├── summarize-repo.sh      repo map
@@ -217,7 +222,7 @@ skills/supergoal/
 
 ## Version
 
-Current: **v0.6.1**. See [CHANGELOG.md](CHANGELOG.md) for release notes.
+Current: **v0.7.0**. See [CHANGELOG.md](CHANGELOG.md) for release notes.
 
 Marketplace consumers can pin a specific version via the `/plugin` UI. Auto-updates are off by default for third-party marketplaces — enable per-marketplace via `/plugin` → **Marketplaces** if you want them.
 
