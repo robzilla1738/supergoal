@@ -587,18 +587,119 @@ h2 {
 
 .flow-layout {
   grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.72fr);
-  align-items: stretch;
+  align-items: start;
 }
 
 .flow-diagram {
+  position: relative;
+  display: grid;
+  gap: 14px;
   width: 100%;
-  height: 100%;
-  min-height: 480px;
+  min-height: 400px;
+  overflow: hidden;
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
-  background: var(--soft);
-  object-fit: cover;
+  background:
+    linear-gradient(90deg, rgba(184, 196, 212, 0.45) 1px, transparent 1px) 0 0 / 112px 112px,
+    linear-gradient(rgba(184, 196, 212, 0.38) 1px, transparent 1px) 0 0 / 112px 112px,
+    linear-gradient(135deg, rgba(37, 99, 235, 0.045), rgba(18, 184, 134, 0.09)),
+    #f8fbff;
+  padding: 20px;
   box-shadow: var(--shadow);
+}
+
+.map-lane {
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1fr) 42px minmax(0, 1fr);
+  gap: 14px;
+  align-items: stretch;
+  min-height: 108px;
+}
+
+.map-node {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.94);
+  padding: 16px;
+  box-shadow: 0 18px 42px rgba(17, 24, 39, 0.08);
+}
+
+.lane-label {
+  display: grid;
+  min-height: 100%;
+  place-items: center;
+  border-radius: var(--radius);
+  background: rgba(17, 24, 39, 0.05);
+  color: var(--blue);
+  font-size: 0.76rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.map-arrow {
+  position: relative;
+  align-self: center;
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--blue), var(--mint));
+}
+
+.map-arrow::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: -1px;
+  width: 12px;
+  height: 12px;
+  border-top: 4px solid var(--mint);
+  border-right: 4px solid var(--mint);
+  transform: translateY(-50%) rotate(45deg);
+}
+
+.map-node span {
+  color: var(--blue);
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.map-node strong {
+  margin-top: 8px;
+  color: var(--ink);
+  font-size: 1.08rem;
+  line-height: 1.12;
+}
+
+.map-node p {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.map-node code {
+  color: var(--blue-strong);
+}
+
+.map-goal {
+  border-color: rgba(17, 24, 39, 0.18);
+  background: var(--ink);
+  color: #fff;
+}
+
+.map-goal span {
+  color: #69e6bd;
+}
+
+.map-goal strong,
+.map-goal p {
+  color: #fff;
 }
 
 .flow-steps {
@@ -1143,7 +1244,7 @@ h2 {
   }
 
   .flow-diagram {
-    min-height: 360px;
+    min-height: 0;
   }
 }
 
@@ -1239,6 +1340,42 @@ h2 {
   .flow-steps li {
     grid-template-columns: 44px minmax(0, 1fr);
     gap: 12px;
+  }
+
+  .flow-diagram {
+    gap: 12px;
+    padding: 16px;
+  }
+
+  .map-lane {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    min-height: 0;
+  }
+
+  .lane-label {
+    min-height: 34px;
+    place-items: center start;
+    padding: 0 12px;
+  }
+
+  .map-arrow {
+    width: 4px;
+    height: 24px;
+    margin-left: 22px;
+    align-self: stretch;
+    background: linear-gradient(180deg, var(--blue), var(--mint));
+  }
+
+  .map-arrow::after {
+    top: auto;
+    right: 50%;
+    bottom: -1px;
+    transform: translateX(50%) rotate(135deg);
+  }
+
+  .map-node {
+    padding: 16px;
   }
 
   .deck-slide {

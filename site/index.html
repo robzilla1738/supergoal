@@ -254,7 +254,50 @@ SUPERGOAL_RUN_COMPLETE</code></pre>
           </p>
         </div>
         <div class="flow-layout">
-          <img class="flow-diagram" src="./assets/supergoal-flow.svg" alt="Workflow diagram showing /supergoal, plan files, /goal, phase loop, recovery, and final audit.">
+          <div class="flow-diagram execution-map" role="img" aria-label="Workflow diagram showing Supergoal planning, run kernel compilation, one goal handoff, gated execution, recovery, audit, and report output.">
+            <div class="map-lane">
+              <div class="lane-label">Plan</div>
+              <article class="map-node map-input">
+                <span>/supergoal</span>
+                <strong>Intake</strong>
+                <p>Memory, tools, repo state, risks.</p>
+              </article>
+              <div class="map-arrow" aria-hidden="true"></div>
+              <article class="map-node map-kernel">
+                <span>run kernel</span>
+                <strong>Compiled contract</strong>
+                <p><code>run.json</code>, events, evidence vault.</p>
+              </article>
+            </div>
+            <div class="map-lane">
+              <div class="lane-label">Execute</div>
+              <article class="map-node map-goal">
+                <span>/goal</span>
+                <strong>Paste once</strong>
+                <p>Executor resumes from disk, not chat memory.</p>
+              </article>
+              <div class="map-arrow" aria-hidden="true"></div>
+              <article class="map-node map-phase">
+                <span>phase loop</span>
+                <strong>Gate every phase</strong>
+                <p>Commands, scope, evidence, trust debt.</p>
+              </article>
+            </div>
+            <div class="map-lane">
+              <div class="lane-label">Recover</div>
+              <article class="map-node map-recovery">
+                <span>recovery</span>
+                <strong>Failures become state</strong>
+                <p>Retry, fix spec, or blocked handoff.</p>
+              </article>
+              <div class="map-arrow" aria-hidden="true"></div>
+              <article class="map-node map-report">
+                <span>audit</span>
+                <strong>Report the proof</strong>
+                <p><code>report.html</code> exposes what passed and what still needs judgment.</p>
+              </article>
+            </div>
+          </div>
           <ol class="flow-steps" data-flow-steps>
             <li>
               <span>01</span>
